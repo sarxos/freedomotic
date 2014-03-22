@@ -1,0 +1,18 @@
+<config>
+    <properties>
+        <!-- PLUGINS DEFAULT PARAMETERS --> 
+        <property name="name" value="knx"/>
+        <property name="description" value="Knx plugin"/>
+        <property name="category" value="protocol"/>
+        <property name="short-name" value="knx"/>
+        <property name="startup-time" value="on load"/>
+        <property name="eibd-server-address" value="127.0.0.1"/>
+        <property name="eibd-server-port" value="3671"/>
+        <property name="datapoints-file-url" value="/knx/datapoints.xml"/>
+
+        <!-- MAPPING KNX DTP - FREEDOMOTIC OBJECTS --> 
+        <property name="1.001" value="Light"/>
+     </properties>
+</config>
+
+                
