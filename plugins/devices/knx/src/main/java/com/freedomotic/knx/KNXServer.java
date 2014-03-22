@@ -1,4 +1,4 @@
-package it.freedomotic.knx;
+package com.freedomotic.knx;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;

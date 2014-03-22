@@ -2,7 +2,7 @@
  * To change this template, choose Tools | Templates
  * and open the template in the editor.
  */
-package it.freedomotic.knx;
+package com.freedomotic.knx;
 
 /*
  * Calimero 2 - A library for KNX network access Copyright (c) 2006, 2011 B.

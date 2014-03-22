@@ -2,7 +2,7 @@
  * To change this template, choose Tools | Templates
  * and open the template in the editor.
  */
-package it.freedomotic.knx;
+package com.freedomotic.knx;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;

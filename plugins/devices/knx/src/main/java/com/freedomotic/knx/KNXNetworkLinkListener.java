@@ -1,4 +1,4 @@
-package it.freedomotic.knx;
+package com.freedomotic.knx;
 
 import tuwien.auto.calimero.CloseEvent;
 import tuwien.auto.calimero.FrameEvent;

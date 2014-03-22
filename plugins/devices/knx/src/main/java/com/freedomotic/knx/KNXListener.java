@@ -1,6 +1,6 @@
-package it.freedomotic.knx;
+package com.freedomotic.knx;
 
-import it.freedomotic.knx.KNXServer;
+import com.freedomotic.knx.KNXServer;
 import java.util.EventListener;
 import tuwien.auto.calimero.DetachEvent;
 import tuwien.auto.calimero.FrameEvent;

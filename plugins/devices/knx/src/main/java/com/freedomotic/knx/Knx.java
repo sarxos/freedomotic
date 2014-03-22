@@ -17,15 +17,15 @@
  * Freedomotic; see the file COPYING. If not, see
  * <http://www.gnu.org/licenses/>.
  */
-package it.freedomotic.knx;
+package com.freedomotic.knx;
 
-import it.freedomotic.api.EventTemplate;
-import it.freedomotic.api.Protocol;
-import it.freedomotic.app.Freedomotic;
-import it.freedomotic.events.ProtocolRead;
-import it.freedomotic.exceptions.UnableToExecuteException;
-import it.freedomotic.reactions.Command;
-import it.freedomotic.util.Info;
+import com.freedomotic.api.EventTemplate;
+import com.freedomotic.api.Protocol;
+import com.freedomotic.app.Freedomotic;
+import com.freedomotic.events.ProtocolRead;
+import com.freedomotic.exceptions.UnableToExecuteException;
+import com.freedomotic.reactions.Command;
+import com.freedomotic.util.Info;
 import java.io.IOException;
 import java.net.UnknownHostException;
 import java.util.Collection;
