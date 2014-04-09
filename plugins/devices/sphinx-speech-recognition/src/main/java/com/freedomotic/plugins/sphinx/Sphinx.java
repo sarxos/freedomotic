@@ -22,6 +22,7 @@ import com.freedomotic.events.SpeechEvent;
 import com.freedomotic.exceptions.UnableToExecuteException;
 import com.freedomotic.reactions.Command;
 import com.freedomotic.util.Info;
+import edu.cmu.sphinx.util.props.PropertyException;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
@@ -40,30 +41,43 @@ import java.util.logging.Logger;
  */
 public class Sphinx extends Protocol {
 
+    private static final Logger LOG = Logger.getLogger(Sphinx.class.getName());
     private Recognizer recognizer;
 
     public Sphinx() {
-        super("Speech Recognition", "/it.nicoletti.sphinx4/speech-recognition-manifest.xml");
+        super("Speech Recognition", "/sphinx-speech-recognition/sphinx-speech-recognition-manifest.xml");
     }
 
     @Override
     public void onStart() {
-        //setGrammar();
-        ConfigurationManager cm;
-        cm = new ConfigurationManager(Sphinx.class.getResource("sphinx.config.xml"));
         try {
-            recognizer = (Recognizer) cm.lookup("recognizer");
-            recognizer.allocate();
-        } catch (Exception e) {
-            e.printStackTrace();
+            //setGrammar();
+            ConfigurationManager cm;
+            String sphinxConfigFile = Info.getDevicesPath() + "/sphinx-speech-recognition/sphinx-config/sphinx.config.xml";
+            File f = new File(sphinxConfigFile);
+            URL urlConfigFile = f.toURI().toURL();
+            cm = new ConfigurationManager(urlConfigFile);
+            //cm = new ConfigurationManager(Sphinx.class.getResource("sphinx.config.xml"));
+            try {
+                recognizer = (Recognizer) cm.lookup("recognizer");
+                recognizer.allocate();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            // start the microphone or exit if the programm if this is not possible
+            Microphone microphone = (Microphone) cm.lookup("microphone");
+            if (microphone == null || !microphone.startRecording()) {
+                LOG.severe("Cannot start microphone. Check if connected.");
+                recognizer.deallocate();
+            }
+            LOG.info("Say: (turn on | turn off) ( kitchen light | livingroom light | light one | light two )");
+        } catch (IOException ex) {
+            Logger.getLogger(Sphinx.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (InstantiationException ex) {
+            Logger.getLogger(Sphinx.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (PropertyException ex) {
+            Logger.getLogger(Sphinx.class.getName()).log(Level.SEVERE, null, ex);
         }
-        // start the microphone or exit if the programm if this is not possible
-        Microphone microphone = (Microphone) cm.lookup("microphone");
-        if (microphone == null || !microphone.startRecording()) {
-            System.out.println("Cannot start microphone. Check if connected.");
-            recognizer.deallocate();
-        }
-        System.out.println("Say: (turn on | turn off) ( kitchen light | livingroom light | light one | light two )");
     }
 
     @Override
