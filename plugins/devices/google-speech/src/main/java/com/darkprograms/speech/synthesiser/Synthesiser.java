@@ -1,30 +1,37 @@
 package com.darkprograms.speech.synthesiser;
 
+import java.io.IOException;
 import java.io.InputStream;
-import java.io.Reader;
+import java.io.SequenceInputStream;
 import java.net.URL;
 import java.net.URLConnection;
 import java.net.URLEncoder;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+
+import com.darkprograms.speech.translator.GoogleTranslate;
+
+
 
 /*******************************************************************************
  * Synthesiser class that connects to Google's unoffical API to retrieve data
  *
  * @author Luke Kuza, Aaron Gokaslan (Skylion)
  *******************************************************************************/
-
 public class Synthesiser {
 
 	/**
 	 * URL to query for Google synthesiser
 	 */
 	private final static String GOOGLE_SYNTHESISER_URL = "http://translate.google.com/translate_tts?tl=";
-
-	/**
-	 * URL to query for Google Auto Detection
-	 */
-	private final static String GOOGLE_AUTODETECT_URL = "http://translate.google.com/translate_a/t?client=t&sl=auto&text=";
 
 	/**
 	 * language of the Text you want to translate
@@ -40,6 +47,8 @@ public class Synthesiser {
 	public static final String LANG_ES_SPANISH = "es";
 	public static final String LANG_FR_FRENCH = "fr";
 	public static final String LANG_DE_GERMAN = "de";
+	public static final String LANG_PT_PORTUGUESE = "pt-pt";
+	public static final String LANG_PT_BRAZILIAN = "pt-br";
 	//Please add on more regional languages as you find them. Also try to include the accent code if you can can.
 
 	/**
@@ -79,9 +88,9 @@ public class Synthesiser {
 	 *
 	 * @param synthText Text you want to be synthesized into MP3 data
 	 * @return Returns an input stream of the MP3 data that is returned from Google
-	 * @throws Exception Throws exception if it can not complete the request
+	 * @throws IOException Throws exception if it can not complete the request
 	 */
-	public InputStream getMP3Data(String synthText) throws Exception {
+	public InputStream getMP3Data(String synthText) throws IOException{
 
 		String languageCode = this.languageCode;//Ensures retention of language settings if set to auto
 
@@ -97,7 +106,7 @@ public class Synthesiser {
 				languageCode = "en-us";//Reverts to Default Language if it can't detect it.
 			}
 		}
-		
+
 		if(synthText.length()>100){
 			List<String> fragments = parseString(synthText);//parses String if too long
 			String tmp = getLanguage();
@@ -115,7 +124,6 @@ public class Synthesiser {
 		// Open New URL connection channel.
 		URLConnection urlConn = url.openConnection(); //Open connection
 
-
 		urlConn.addRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:2.0) Gecko/20100101 Firefox/4.0"); //Adding header for user agent is required
 
 		return urlConn.getInputStream();
@@ -125,14 +133,32 @@ public class Synthesiser {
 	 * Gets an InputStream to MP3Data for the returned information from a request
 	 * @param synthText List of Strings you want to be synthesized into MP3 data
 	 * @return Returns an input stream of all the MP3 data that is returned from Google
-	 * @throws Exception Throws exception if it cannot complete the request
+	 * @throws IOException Throws exception if it cannot complete the request
 	 */
-	public InputStream getMP3Data(List<String> synthText) throws Exception{
-		InputStream complete = getMP3Data(synthText.remove(0));
-		for(String part: synthText){
-			complete = new java.io.SequenceInputStream(complete, getMP3Data(part));//Concatenate with new MP3 Data
+	public InputStream getMP3Data(List<String> synthText) throws IOException{
+		//Uses an executor service pool for concurrency
+		ExecutorService pool = Executors.newFixedThreadPool(synthText.size());
+		//Stores the Future (Data that will be returned in the future)
+		Set<Future<InputStream>> set = new LinkedHashSet<Future<InputStream>>(synthText.size());
+		for(String part: synthText){ //Iterates through the list
+			Callable<InputStream> callable = new MP3DataFetcher(part);//Creates Callable
+			Future<InputStream> future = pool.submit(callable);//Begins to run Callable
+			set.add(future);//Adds the response that will be returned to a set.
 		}
-		return complete;
+		List<InputStream> inputStreams = new ArrayList<InputStream>(set.size());
+		for(Future<InputStream> future: set){
+			try {
+				inputStreams.add(future.get());//Gets the returned data from the future.
+			} catch (ExecutionException e) {//Thrown if the MP3DataFetcher encountered an error.
+				Throwable ex = e.getCause();
+				if(ex instanceof IOException){
+					throw (IOException)ex;//Downcasts and rethrows it.
+				}
+			} catch (InterruptedException e){//Will probably never be called, but just in case...
+				Thread.currentThread().interrupt();//Interrupts the thread since something went wrong.
+			}
+		}
+		return new SequenceInputStream(Collections.enumeration(inputStreams));//Sequences the stream.
 	}
 
 	/**
@@ -206,97 +232,30 @@ public class Synthesiser {
 	/**
 	 * Automatically determines the language of the original text
 	 * @param text represents the text you want to check the language of
-	 * @return the languageCode
+	 * @return the languageCode in ISO-639
 	 * @throws Exception if it cannot complete the request
 	 */
-	public String detectLanguage(String text) throws Exception{
-		if(text.length()>99){//Google will not compute more than 99 characters
-			int lastWord = findLastWord(text);
-			if(lastWord<0){
-				text = text.substring(0,99);//Fix for languages without spaces. 
-			}
-			else{
-				text = text.substring(0,lastWord);//We don't need the whole text to determine language
-			}
-		}
-		String encoded = URLEncoder.encode(text, "UTF-8"); //Encode
-		URL url = new URL(GOOGLE_AUTODETECT_URL + encoded); //Generates URL
-		URLConnection urlConn = url.openConnection(); //Open connection
-		urlConn.addRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:2.0) Gecko/20100101 Firefox/4.0"); //Adding header for user agent is required
-		String rawData = urlToText(urlConn);//Gets text from Google
-		if(!isLanguageSupported(rawData))
-			return null;//Comment this if statement out if you want to use this code for rare languages like Maori.
-		return parseRawData(rawData);
+	public String detectLanguage(String text) throws IOException{
+		return GoogleTranslate.detectLanguage(text);
 	}
 
 	/**
-	 * Converts a URL Connection to Text
-	 * @param urlConn The Open URLConnection that you want to generate a String from
-	 * @return The generated String
-	 * @throws Exception if it cannot complete the request
+	 * This class is a callable.
+	 * A callable is like a runnable except that it can return data and throw exceptions.
+	 * Useful when using futures. Dramatically improves the speed of execution. 
+	 * @author Aaron Gokaslan (Skylion)
 	 */
-	private String urlToText(URLConnection urlConn) throws Exception{
-		Reader r = new java.io.InputStreamReader(urlConn.getInputStream());//Gets Data Converts to string
-		StringBuilder buf = new StringBuilder();
-		while (true) {
-			int ch = r.read();
-			if (ch < 0)
-				break;
-			buf.append((char) ch);
+	private class MP3DataFetcher implements Callable<InputStream>{
+		private String synthText;
+		
+		public MP3DataFetcher(String synthText){
+			this.synthText = synthText;
 		}
-		String str = buf.toString();
-		return str;
+		
+		public InputStream call() throws IOException{
+			return getMP3Data(synthText);
+		}
 	}
 
-	/**
-	 * Searches RawData for Language & region if possible
-	 * @param RawData the raw String directly from Google you want to search through
-	 * @return The language parsed from the rawData or null if Google cannot determine it.
-	 */
-	private String parseRawData(String rawData){
-		for(int i = 0; i+5<rawData.length(); i++){
-			boolean dashDetected = rawData.charAt(i+4)=='-';//Sometimes Google will detect the region too.
-			if(rawData.charAt(i)==','  && rawData.charAt(i+1)== '"' 
-					&& ((rawData.charAt(i+4)=='"' && rawData.charAt(i+5)==',')
-							|| dashDetected)){
-				if(dashDetected){//If region is detected parses the whole string!
-					int lastQuote = rawData.substring(i+2).indexOf('"');//Where the region ends
-					if(lastQuote>0)
-						return rawData.substring(i+2,i+2+lastQuote);
-				}
-				else{
-					String possible = rawData.substring(i+2,i+4);
-					if(containsLettersOnly(possible)){//Required due to Google's inconsistent formatting.
-						//System.out.println(possible);
-						return possible;
-					}
-				}
-			}
-		}//End of Loop
-		return null;
-	}
-
-	/**
-	 * Checks if all characters in text are letters.  
-	 * @param text The text you want to determine the validity of.
-	 * @return True if all characters are letters, otherwise false.
-	 */
-	private boolean containsLettersOnly(String text){
-		for(int i = 0; i<text.length(); i++){
-			if(!Character.isLetter(text.charAt(i))){
-				return false;
-			}
-		}
-		return true;
-	}
-	
-	/**
-	 * Check is a language is supported from rawData
-	 * @param rawData Checks if a language is supported based off of rawData
-	 * @return true if supported otherwise false.
-	 */
-	private boolean isLanguageSupported(String rawData){
-		return !rawData.contains(",\"We are not yet able to translate from ");
-	}
 }
 

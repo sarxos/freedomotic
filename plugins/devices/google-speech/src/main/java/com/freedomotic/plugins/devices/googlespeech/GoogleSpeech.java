@@ -17,9 +17,9 @@
  * Freedomotic; see the file COPYING. If not, see
  * <http://www.gnu.org/licenses/>.
  */
-package com.freedomotic.googlespeech;
+package com.freedomotic.plugins.devices.googlespeech;
 
-import com.darkprograms.speech.gui.MainGUI;
+//import com.darkprograms.speech.gui.MainGUI;
 import com.darkprograms.speech.synthesiser.Synthesiser;
 import com.freedomotic.api.EventTemplate;
 import com.freedomotic.api.Protocol;
@@ -80,7 +80,6 @@ public class GoogleSpeech
 
     @Override
     protected void onStart() {
-        //new SpeechDetectionTest().start();
         LOG.info("Google Speech plugin started");
     }
 
@@ -93,7 +92,6 @@ public class GoogleSpeech
     protected void onCommand(Command c)
             throws IOException, UnableToExecuteException {
         String message = c.getProperty("say");
-        //new Thread(new Speaker(message)).start();
         if (c != null) {
             say(message);
         }
@@ -133,7 +131,6 @@ public class GoogleSpeech
             Synthesiser synthesiser = new Synthesiser(LANGUAGE_CODE);
             try {
                 InputStream is = synthesiser.getMP3Data(message);
-                //InputStreamToMP3File(is);
                 Player player = new Player(is);
                 player.play();
 
@@ -143,6 +140,10 @@ public class GoogleSpeech
         }
     }
 
+    /*
+     * Converts audio input stream into mp3 file called google.mp3 @param
+     * InputStream @return void
+     */
     void InputStreamToMP3File(InputStream inputStream) {
 
         try {
@@ -156,7 +157,7 @@ public class GoogleSpeech
             }
             out.close();
             inputStream.close();
-            System.out.println("File is created");
+            //System.out.println("File is created");
         } catch (IOException e) {
         }
     }

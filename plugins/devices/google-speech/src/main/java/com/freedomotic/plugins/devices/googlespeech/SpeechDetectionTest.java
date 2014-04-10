@@ -2,7 +2,7 @@
  * To change this template, choose Tools | Templates
  * and open the template in the editor.
  */
-package com.freedomotic.googlespeech;
+package com.freedomotic.plugins.devices.googlespeech;
 
 import java.io.*;
 import javax.sound.sampled.*;

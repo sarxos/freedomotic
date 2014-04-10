@@ -8,7 +8,6 @@ import java.util.List;
  *
  * @author Luke Kuza, Duncan Jauncey, Aaron Gokaslan
  ******************************************************************************/
-
 public class GoogleResponse {
 
     /**

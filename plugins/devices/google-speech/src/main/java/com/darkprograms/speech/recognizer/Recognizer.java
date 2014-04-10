@@ -3,17 +3,19 @@ package com.darkprograms.speech.recognizer;
 import java.io.*;
 import java.net.URL;
 import java.net.URLConnection;
+import java.nio.charset.Charset;
+
+import com.darkprograms.speech.util.StringUtil;
 
 /***************************************************************
  * Class that submits FLAC audio and retrieves recognized text
  *
  * @author Luke Kuza, Duncan Jauncey, Aaron Gokaslan
  **************************************************************/
-
 public class Recognizer {
 
     public enum Languages{
-		AUTO_DETECT(null),//tells Google to auto-detect the language
+		AUTO_DETECT("auto"),//tells Google to auto-detect the language
 		ARABIC_JORDAN("ar-JO"),
 		ARABIC_LEBANON("ar-LB"),
 		ARABIC_QATAR("ar-QA"),
@@ -50,11 +52,10 @@ public class Recognizer {
 		JAPANESE("ja"),
 		KOREAN("ko"),
 		LATIN("la"),
-		MANDARIN_CHINESE("zh-CN"),
-		TRADITIONAL_TAIWAN("zh-TW"),
-		SIMPLIFIED_CHINA("ZH-CN"),
-		SIMPLIFIED_HONG_KONG("zh-HK"),
-		YUE_CHINESE_TRADITIONAL_HONG_KONG("zh-yue"),
+		CHINESE_SIMPLIFIED("zh-CN"),
+		CHINESE_TRANDITIONAL("zh-TW"),
+		CHINESE_HONGKONG("zh-HK"),
+		CHINESE_CANTONESE("zh-yue"),
 		MALAYSIAN("ms-MY"),
 		NORWEGIAN("no-NO"),
 		POLISH("pl"),
@@ -89,6 +90,8 @@ public class Recognizer {
 		TURKISH("tr"),
 		ZULU("zu");
 	    
+		//TODO Clean Up JavaDoc for Overloaded Methods using @link
+		
 	    /**
 	     *Stores the LanguageCode
 	     */
@@ -120,6 +123,7 @@ public class Recognizer {
      * Constructor
      */
     public Recognizer() {
+    	this.setLanguage(Languages.AUTO_DETECT);
     }
     
     /**
@@ -206,20 +210,20 @@ public class Recognizer {
     }
 
     /**
-     * Get recognized data from a Wave file.  This method will encode the wave file to a FLAC
+     * Get recognized data from a Wave file.  This method will encode the wave file to a FLAC file
      *
      * @param waveFile Wave file to recognize
      * @param maxResults Maximum number of results to return in response
      * @return Returns a GoogleResponse, with the response and confidence score
-     * @throws Exception Throws exception if something goes wrong
+     * @throws IOException Throws exception if something goes wrong
      */
-    public GoogleResponse getRecognizedDataForWave(File waveFile, int maxResults) throws Exception {
+    public GoogleResponse getRecognizedDataForWave(File waveFile, int maxResults) throws IOException{
         FlacEncoder flacEncoder = new FlacEncoder();
         File flacFile = new File(waveFile + ".flac");
 
         flacEncoder.convertWaveToFlac(waveFile, flacFile);
 
-        String response = rawRequest(flacFile, maxResults);
+        String response = rawRequest(flacFile, maxResults, 8000);//Transcodes to 8000 automatically
 
         //Delete converted FLAC data
         flacFile.delete();
@@ -234,10 +238,11 @@ public class Recognizer {
      *
      * @param waveFile Wave file to recognize
      * @param maxResults the maximum number of results to return in the response
+     * NOTE: Sample rate of file must be 8000 unless a custom sample rate is specified.
      * @return Returns a GoogleResponse, with the response and confidence score
-     * @throws Exception Throws exception if something goes wrong
+     * @throws IOException Throws exception if something goes wrong
      */
-    public GoogleResponse getRecognizedDataForWave(String waveFile, int maxResults) throws Exception {
+    public GoogleResponse getRecognizedDataForWave(String waveFile, int maxResults) throws IOException {
         return getRecognizedDataForWave(new File(waveFile), maxResults);
     }
 
@@ -246,11 +251,25 @@ public class Recognizer {
      *
      * @param flacFile FLAC file to recognize
      * @param maxResults the maximum number of results to return in the response
+     * NOTE: Sample rate of file must be 8000 unless a custom sample rate is specified.
      * @return Returns a GoogleResponse, with the response and confidence score
-     * @throws Exception Throws exception if something goes wrong
+     * @throws IOException Throws exception if something goes wrong
      */
-    public GoogleResponse getRecognizedDataForFlac(File flacFile, int maxResults) throws Exception {
-        String response = rawRequest(flacFile, maxResults);
+    public GoogleResponse getRecognizedDataForFlac(File flacFile, int maxResults) throws IOException {
+    	return getRecognizedDataForFlac(flacFile, maxResults, 8000);
+    }
+
+    /**
+     * Get recognized data from a FLAC file.
+     *
+     * @param flacFile FLAC file to recognize
+     * @param maxResults the maximum number of results to return in the response
+     * @param samepleRate The sampleRate of the file. Default is 8000.
+     * @return Returns a GoogleResponse, with the response and confidence score
+     * @throws IOException Throws exception if something goes wrong
+     */
+    public GoogleResponse getRecognizedDataForFlac(File flacFile, int maxResults, int sampleRate) throws IOException{
+        String response = rawRequest(flacFile, maxResults, sampleRate);
         GoogleResponse googleResponse = new GoogleResponse();
         parseResponse(response, googleResponse);
         return googleResponse;
@@ -261,10 +280,23 @@ public class Recognizer {
      *
      * @param flacFile FLAC file to recognize
      * @param maxResults the maximum number of results to return in the response
+     * @param samepleRate The sampleRate of the file. Default is 8000.
      * @return Returns a GoogleResponse, with the response and confidence score
-     * @throws Exception Throws exception if something goes wrong
+     * @throws IOException Throws exception if something goes wrong
      */
-    public GoogleResponse getRecognizedDataForFlac(String flacFile, int maxResults) throws Exception {
+    public GoogleResponse getRecognizedDataForFlac(String flacFile, int maxResults, int sampleRate) throws IOException{
+    	return getRecognizedDataForFlac(new File(flacFile), maxResults, sampleRate);
+    }
+    
+    /**
+     * Get recognized data from a FLAC file.
+     *
+     * @param flacFile FLAC file to recognize
+     * @param maxResults the maximum number of results to return in the response
+     * @return Returns a GoogleResponse, with the response and confidence score
+     * @throws IOException Throws exception if something goes wrong
+     */
+    public GoogleResponse getRecognizedDataForFlac(String flacFile, int maxResults) throws IOException {
         return getRecognizedDataForFlac(new File(flacFile), maxResults);
     }
 
@@ -274,9 +306,9 @@ public class Recognizer {
      *
      * @param waveFile Wave file to recognize
      * @return Returns a GoogleResponse, with the response and confidence score
-     * @throws Exception Throws exception if something goes wrong
+     * @throws IOException Throws exception if something goes wrong
      */
-    public GoogleResponse getRecognizedDataForWave(File waveFile) throws Exception {
+    public GoogleResponse getRecognizedDataForWave(File waveFile) throws IOException {
         return getRecognizedDataForWave(waveFile, 1);
     }
 
@@ -286,9 +318,9 @@ public class Recognizer {
      *
      * @param waveFile Wave file to recognize
      * @return Returns a GoogleResponse, with the response and confidence score
-     * @throws Exception Throws exception if something goes wrong
+     * @throws IOException Throws exception if something goes wrong
      */
-    public GoogleResponse getRecognizedDataForWave(String waveFile) throws Exception {
+    public GoogleResponse getRecognizedDataForWave(String waveFile) throws IOException {
         return getRecognizedDataForWave(waveFile, 1);
     }
 
@@ -298,9 +330,9 @@ public class Recognizer {
      *
      * @param flacFile FLAC file to recognize
      * @return Returns a GoogleResponse, with the response and confidence score
-     * @throws Exception Throws exception if something goes wrong
+     * @throws IOException Throws exception if something goes wrong
      */
-    public GoogleResponse getRecognizedDataForFlac(File flacFile) throws Exception {
+    public GoogleResponse getRecognizedDataForFlac(File flacFile) throws IOException {
         return getRecognizedDataForFlac(flacFile, 1);
     }
 
@@ -310,9 +342,9 @@ public class Recognizer {
      *
      * @param flacFile FLAC file to recognize
      * @return Returns a GoogleResponse, with the response and confidence score
-     * @throws Exception Throws exception if something goes wrong
+     * @throws IOException Throws exception if something goes wrong
      */
-    public GoogleResponse getRecognizedDataForFlac(String flacFile) throws Exception {
+    public GoogleResponse getRecognizedDataForFlac(String flacFile) throws IOException {
         return getRecognizedDataForFlac(flacFile, 1);
     }
 
@@ -320,13 +352,13 @@ public class Recognizer {
      * Parses the raw response from Google
      *
      * @param rawResponse The raw, unparsed response from Google
-     * @return Returns the parsed response.  Index 0 is response, Index 1 is confidence score
+     * @return Returns the parsed response in the form of a Google Response.
      */
     private void parseResponse(String rawResponse, GoogleResponse googleResponse) {
-        if (!rawResponse.contains("utterance"))
+        if (rawResponse == null || !rawResponse.contains("utterance"))
             return;
 
-        String array = substringBetween(rawResponse, "[", "]");
+        String array = StringUtil.substringBetween(rawResponse, "[", "]");
         String[] parts = array.split("}");
         
         boolean first = true;
@@ -339,8 +371,8 @@ public class Recognizer {
                 String utterance = utterancePart.split(":")[1];
                 String confidence = confidencePart.split(":")[1];
 
-                utterance = stripQuotes(utterance);
-                confidence = stripQuotes(confidence);
+                utterance = StringUtil.stripQuotes(utterance);
+                confidence = StringUtil.stripQuotes(confidence);
 
                 if( utterance.equals("null") ) {
                     utterance = null;
@@ -353,7 +385,7 @@ public class Recognizer {
                 googleResponse.setConfidence(confidence);
             } else {
                 String utterance = s.split(":")[1];
-                utterance = stripQuotes(utterance);
+                utterance = StringUtil.stripQuotes(utterance);
                 if( utterance.equals("null") ) {
                     utterance = null;
                 }
@@ -368,9 +400,9 @@ public class Recognizer {
      *
      * @param inputFile Input files to recognize
      * @return Returns the raw, unparsed response from Google
-     * @throws Exception Throws exception if something went wrong
+     * @throws IOException Throws exception if something went wrong
      */
-    private String rawRequest(File inputFile, int maxResults) throws Exception {
+    private String rawRequest(File inputFile, int maxResults, int sampleRate) throws IOException{
         URL url;
         URLConnection urlConn;
         OutputStream outputStream;
@@ -380,6 +412,9 @@ public class Recognizer {
         if( language != null ) {
             sb.append("&lang=");
             sb.append(language);
+        }
+        else{
+        	sb.append("&lang=auto");
         }
         if( !profanityFilter ) {
             sb.append("&pfilter=0");
@@ -401,7 +436,7 @@ public class Recognizer {
         urlConn.setUseCaches(false);
 
         // Specify the header content type.
-        urlConn.setRequestProperty("Content-Type", "audio/x-flac; rate=8000");
+        urlConn.setRequestProperty("Content-Type", "audio/x-flac; rate=" + sampleRate);
 
         // Send POST output.
         outputStream = urlConn.getOutputStream();
@@ -419,7 +454,7 @@ public class Recognizer {
         outputStream.close();
 
         // Get response data.
-        br = new BufferedReader(new InputStreamReader(urlConn.getInputStream()));
+        br = new BufferedReader(new InputStreamReader(urlConn.getInputStream(), Charset.forName("UTF-8")));
 
         String response = br.readLine();
 
@@ -428,32 +463,5 @@ public class Recognizer {
         return response;
 
     }
-
-    private String substringBetween(String s, String part1, String part2) {
-        String sub = null;
-
-        int i = s.indexOf(part1);
-        int j = s.indexOf(part2, i + part1.length());
-
-        if (i != -1 && j != -1) {
-            int nStart = i + part1.length();
-            sub = s.substring(nStart, j);
-        }
-
-        return sub;
-    }
-
-    private String stripQuotes(String s) {
-        int start = 0;
-        if( s.startsWith("\"") ) {
-            start = 1;
-        }
-        int end = s.length();
-        if( s.endsWith("\"") ) {
-            end = s.length() - 1;
-        }
-        return s.substring(start, end);
-    }
-
 
 }

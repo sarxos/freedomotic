@@ -15,7 +15,6 @@ import java.nio.ByteOrder;
  * Class that contains methods to encode Wave files to FLAC files
  * THIS IS THANKS TO THE javaFlacEncoder Project created here: http://sourceforge.net/projects/javaflacencoder/
  ************************************************************************************************************/
-
 public class FlacEncoder {
 
     /**
@@ -55,7 +54,11 @@ public class FlacEncoder {
 
             flacEncoder.openFLACStream();
 
-            int[] sampleData = new int[(int) audioInputStream.getFrameLength()];
+            int frameLength = (int) audioInputStream.getFrameLength();
+            if(frameLength <= AudioSystem.NOT_SPECIFIED){
+            	frameLength = 16384;//Arbitrary file size
+            }
+            int[] sampleData = new int[frameLength];
             byte[] samplesIn = new byte[frameSize];
 
             int i = 0;
@@ -73,6 +76,8 @@ public class FlacEncoder {
                 i++;
             }
 
+            sampleData = truncateNullData(sampleData, i);
+            
             flacEncoder.addSamples(sampleData, i);
             flacEncoder.encodeSamples(i, false);
             flacEncoder.encodeSamples(flacEncoder.samplesAvailableToEncode(), true);
@@ -97,5 +102,19 @@ public class FlacEncoder {
         convertWaveToFlac(new File(inputFile), new File(outputFile));
     }
 
+    /**
+     * Used for when the frame length is unknown to shorten the array to prevent huge blank end space 
+     * @param sampleData The int[] array you want to shorten
+     * @param index The index you want to shorten it to
+     * @return The shortened array
+     */
+    private int[] truncateNullData(int[] sampleData, int index){
+    	if(index == sampleData.length) return sampleData;
+    	int[] out = new int[index];
+    	for(int i = 0; i<index; i++){
+    		out[i] = sampleData[i];
+    	}
+    	return out;
+    }
 
 }
