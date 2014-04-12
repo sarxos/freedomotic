@@ -6,6 +6,7 @@
         <property name="startup-time" value="on load"/>
         <property name="language-code" value="en-US"/>
         <property name="record-time" value="3000"/>
+        <property name="passive-listening" value="true"/>
     </properties>
 </config>
 
