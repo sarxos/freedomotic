@@ -32,8 +32,6 @@ import com.freedomotic.exceptions.UnableToExecuteException;
 import com.freedomotic.reactions.Command;
 import com.freedomotic.util.Info;
 import java.io.*;
-import java.util.Arrays;
-import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.sound.sampled.AudioFileFormat;
@@ -46,7 +44,8 @@ public class GoogleSpeech
 
     private static final Logger LOG = Logger.getLogger(GoogleSpeech.class.getName());
     private int RECORD_TIME = configuration.getIntProperty("record-time", 3000);
-    public String PASSIVE_LISTENING = configuration.getStringProperty("passive-listening", "false");
+    private int THRESOLD = configuration.getIntProperty("thresold", 10);
+    private String PASSIVE_LISTENING = configuration.getStringProperty("passive-listening", "false");
     final int POLLING_WAIT;
     public String LANGUAGE_CODE = configuration.getStringProperty("language-code", "en-US");
     public AePlayWave aePlayWave;
@@ -129,8 +128,6 @@ public class GoogleSpeech
         throw new UnsupportedOperationException("Not supported yet.");
     }
 
-    
-
     /*
      * Thread class for continuous microphone listening
      */
@@ -138,34 +135,35 @@ public class GoogleSpeech
 
         @Override
         public void run() {
-            ambientListening2();
+            try {
+                environmentListening();
+            } catch (IOException ex) {
+                LOG.severe(ex.getLocalizedMessage());
+            }
         }
     }
 
-    void ambientListening2() {
+    void environmentListening() throws IOException {
 
         String fileName = "recordedFile.wav";//Name your file whatever you want
 
         try {
             micAnalyzer.open();
             micAnalyzer.captureAudioToFile(fileName);//Rewrites a 10 second minimum audio clip over and over again.
-            final int THRESHOLD = 5; // your threshold
+            final int THRESHOLD = THRESOLD;
             int ambientVolume = micAnalyzer.getAudioVolume();
             int speakingVolume = -2;
             boolean speaking = false;
             for (int i = 0; i < 1 || speaking; i++) {
                 int volume = micAnalyzer.getAudioVolume();
-                System.out.println(" Audio volume =" + volume + " Ambient volume =" + ambientVolume);
+                System.out.println("Audio volume =" + volume + "  Environment volume =" + ambientVolume);
                 if (volume > ambientVolume + THRESHOLD) {
-                    //mic.captureAudioToFile(filename);//You will want to keep a buffer most likely to
-                    speakingVolume = volume;         //That the first few words aren't cut off in speech
-                    speaking = true;                 //If you aren't concerned about that record here.
+                    speakingVolume = volume;
+                    speaking = true;
                     try {
                         Thread.sleep(1000);
-
-
                     } catch (InterruptedException ex) {
-                        Logger.getLogger(GoogleSpeech.class.getName()).log(Level.SEVERE, null, ex);
+                        LOG.severe(ex.getLocalizedMessage());
                     }
                     System.out.println("SPEAKING");
                 }
@@ -175,17 +173,19 @@ public class GoogleSpeech
                 try {
                     Thread.sleep(200);//Your refreshRate
                 } catch (InterruptedException ex) {
-                    Logger.getLogger(GoogleSpeech.class.getName()).log(Level.SEVERE, null, ex);
+                    LOG.severe(ex.getLocalizedMessage());
                 }
             }
             micAnalyzer.close();
             if (!speaking) {
-                ambientListening2();
+                environmentListening();
             }
-            //new Thread(new RecognizeThread(LANGUAGE_CODE, file)).start();
-            ambientListening2();
+            Recognizer rec = new Recognizer(LANGUAGE_CODE);
+            GoogleResponse out = rec.getRecognizedDataForWave(fileName);
+            System.out.println("Google response " + out.getResponse());
+            environmentListening();
         } catch (LineUnavailableException ex) {
-            Logger.getLogger(GoogleSpeech.class.getName()).log(Level.SEVERE, null, ex);
+            LOG.severe(ex.getLocalizedMessage());
         }
     }
 
@@ -194,8 +194,6 @@ public class GoogleSpeech
             new GoogleSpeech.Speaker(languageCode, message).start();
         } catch (Exception e) {
             LOG.severe(Freedomotic.getStackTraceInfo(e));
-
-
         }
     }
 
@@ -279,12 +277,11 @@ public class GoogleSpeech
         try {
             System.out.println("Recording...");
             pluginGUI.setStatus("Recording ...");
-            Thread.sleep(5000);//In our case, we'll just wait 5 seconds.
+            Thread.sleep(RECORD_TIME);
         } catch (InterruptedException ex) {
             // TODO Auto-generated catch block
             ex.printStackTrace();
         }
-
         mic.close();//Ends recording and frees the resources
         System.out.println("Recording stopped.");
         new Thread(new RecognizeThread(LANGUAGE_CODE, recordedFile)).start();
