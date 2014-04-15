@@ -1,4 +1,4 @@
-package com.freedomotic.knx;
+package com.freedomotic.plugins.devices.knx;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -17,7 +17,7 @@ import tuwien.auto.calimero.process.ProcessCommunicatorImpl;
 
 public class KNXServer {
 
-    Knx knx;
+    Knx4Fd knx;
     /**
      * The object used to interact with the KNX network
      */
@@ -32,7 +32,7 @@ public class KNXServer {
     private KNXListener listener = null;
     private KNXNetworkLinkListener networkLinkListener = null;
 
-    public KNXServer(Knx knx) {
+    public KNXServer(Knx4Fd knx) {
         this.knx = knx;
     }
 

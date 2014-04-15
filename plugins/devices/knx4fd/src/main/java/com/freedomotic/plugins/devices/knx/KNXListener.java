@@ -1,6 +1,6 @@
-package com.freedomotic.knx;
+package com.freedomotic.plugins.devices.knx;
 
-import com.freedomotic.knx.KNXServer;
+import com.freedomotic.plugins.devices.knx.KNXServer;
 import java.util.EventListener;
 import tuwien.auto.calimero.DetachEvent;
 import tuwien.auto.calimero.FrameEvent;
@@ -49,7 +49,7 @@ class KNXListener implements ProcessListener {
    // @Override
     public void detached(DetachEvent arg0) {
 
-        Knx.LOG.info("The KNXNetworkLink has been disconnected from the Process Monitor");
+        Knx4Fd.LOG.info("The KNXNetworkLink has been disconnected from the Process Monitor");
     }
 
     /**
@@ -62,19 +62,19 @@ class KNXListener implements ProcessListener {
     public boolean sendDataToDevice(String deviceAddress, String value) throws KNXException {
         //try to send data to a device
         try {
-            Knx.LOG.info("Trying to send message to device with address " + deviceAddress + "...");
+            Knx4Fd.LOG.info("Trying to send message to device with address " + deviceAddress + "...");
             GroupAddress gp = new GroupAddress(deviceAddress);
             serverRef.getPc().write(gp, value);
-            Knx.LOG.info("Sent message to device with address " + deviceAddress + " successfully");
+            Knx4Fd.LOG.info("Sent message to device with address " + deviceAddress + " successfully");
             return true;
         } catch (KNXFormatException e) {
-            Knx.LOG.severe("Could not obtain GroupAddress from string provided. Aborting send");
+            Knx4Fd.LOG.severe("Could not obtain GroupAddress from string provided. Aborting send");
             return false;
         } catch (KNXTimeoutException e) {
-            Knx.LOG.severe("Timeout occurred while trying to send a write to the KNX network. Aborting send.");
+            Knx4Fd.LOG.severe("Timeout occurred while trying to send a write to the KNX network. Aborting send.");
             return false;
         } catch (KNXLinkClosedException e) {
-            Knx.LOG.severe("The link was closed while trying to send a command. Aborting send");
+            Knx4Fd.LOG.severe("The link was closed while trying to send a command. Aborting send");
             return false;
         }
 

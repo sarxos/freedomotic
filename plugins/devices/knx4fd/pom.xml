@@ -8,7 +8,7 @@
         <version>5.6-SNAPSHOT</version>
         <relativePath>../../../</relativePath>
     </parent>    
-    <artifactId>knx</artifactId>
+    <artifactId>knx4fd</artifactId>
     <packaging>jar</packaging>
     <name>Knx plugin for Freedomotic</name>
     <version>3.0</version>

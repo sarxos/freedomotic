@@ -2,7 +2,7 @@
  * To change this template, choose Tools | Templates
  * and open the template in the editor.
  */
-package com.freedomotic.knx;
+package com.freedomotic.plugins.devices.knx;
 
 import java.util.Collection;
 import java.util.Iterator;
@@ -18,12 +18,12 @@ import tuwien.auto.calimero.datapoint.DatapointMap;
  */
 public class KnxFrame extends javax.swing.JFrame {
 
-    Knx pluginReference;
+    Knx4Fd pluginReference;
 
     /**
      * Creates new form KnxGui
      */
-    public KnxFrame(Knx pluginReference) {
+    public KnxFrame(Knx4Fd pluginReference) {
         this.pluginReference = pluginReference;
       //  DatapointMap m = Knx.LoadDatapoints(pluginReference.dataPointsFile);
         

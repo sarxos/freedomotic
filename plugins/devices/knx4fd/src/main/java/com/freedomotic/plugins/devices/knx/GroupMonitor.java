@@ -2,7 +2,7 @@
  * To change this template, choose Tools | Templates
  * and open the template in the editor.
  */
-package com.freedomotic.knx;
+package com.freedomotic.plugins.devices.knx;
 
 /*
  * Calimero 2 - A library for KNX network access Copyright (c) 2006, 2011 B.
@@ -67,7 +67,7 @@ public class GroupMonitor implements Runnable {
 
         @Override
         public void linkClosed(CloseEvent e) {
-            Knx.LOG.info("network monitor closed (" + e.getReason() + ")");
+            Knx4Fd.LOG.info("network monitor closed (" + e.getReason() + ")");
             synchronized (GroupMonitor.this) {
                 GroupMonitor.this.notify();
             }
@@ -196,7 +196,7 @@ public class GroupMonitor implements Runnable {
         CEMI frame = e.getFrame();
         final StringBuffer sb = new StringBuffer();
         sb.append(frame.toString());
-        Knx.LOG.info(sb.toString());
+        Knx4Fd.LOG.info(sb.toString());
     }
 
     /**
@@ -209,10 +209,10 @@ public class GroupMonitor implements Runnable {
      */
     protected void onCompletion(final Exception thrown, final boolean canceled) {
         if (canceled) {
-            Knx.LOG.info(" stopped");
+            Knx4Fd.LOG.info(" stopped");
         }
         if (thrown != null) {
-            Knx.LOG.severe(thrown.getMessage() != null ? thrown.getMessage() : thrown.getClass().getName());
+            Knx4Fd.LOG.severe(thrown.getMessage() != null ? thrown.getMessage() : thrown.getClass().getName());
         }
     }
 

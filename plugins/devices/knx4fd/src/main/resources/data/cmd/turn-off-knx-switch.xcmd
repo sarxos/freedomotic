@@ -7,7 +7,8 @@
     <timeout>0</timeout>
     <properties>
         <properties>
-            <property name="dpt" value="1.001"/>
+            <property name="operation" value="write"/>
+            <property name="dpt" value="switch"/>
             <property name="value" value="off"/>
 	    <property name="address" value="@owner.object.address"/>
         </properties>
