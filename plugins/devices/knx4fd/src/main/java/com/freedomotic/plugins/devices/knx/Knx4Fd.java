@@ -33,10 +33,7 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.logging.Logger;
 import tuwien.auto.calimero.GroupAddress;
-import tuwien.auto.calimero.datapoint.Datapoint;
-import tuwien.auto.calimero.datapoint.DatapointMap;
-import tuwien.auto.calimero.datapoint.DatapointModel;
-import tuwien.auto.calimero.datapoint.StateDP;
+import tuwien.auto.calimero.datapoint.*;
 import tuwien.auto.calimero.exception.KNXException;
 import tuwien.auto.calimero.exception.KNXIllegalArgumentException;
 import tuwien.auto.calimero.xml.KNXMLException;
@@ -50,10 +47,12 @@ public class Knx4Fd extends Protocol {
     public final String EIBD_SERVER_ADDRESS = configuration.getStringProperty("eibd-server-address", "127.0.0.1");
     public final String EIBD_SERVER_PORT = configuration.getStringProperty("eibd-server-port", "3671");
     public final String EIBD_SERVER_DATACONTROL = configuration.getStringProperty("eibd-server-datacontrol", "127.0.1.1");
-    KNXServer serverObj;
+    public final String DATAPOINTS_FILE = configuration.getStringProperty("datapoints-file", "/knx4fd/datapointMap.xml");
+    //KNXServer serverObj;
     public NetworkMonitor networkMonitor = null;
-    public static DatapointModel m;
-    private static final String dataPointsFile = Info.getDevicesPath() + "/knx4fd/datapointMap.xml";
+    public DatapointModel datapointModel;
+    public DatapointMap datapointMap;
+    private final String dataPointsFile = Info.getDevicesPath() + DATAPOINTS_FILE;
     KnxFrame KnxGui = new KnxFrame(this);
 
     public Knx4Fd() {
@@ -76,6 +75,8 @@ public class Knx4Fd extends Protocol {
         //  LOG.severe(ex.toString());
         // }
         //NetworkMon();
+        datapointMap = LoadDatapoints(dataPointsFile);
+        autoDiscoveringDevices(datapointMap);
     }
 
     @Override
@@ -146,38 +147,54 @@ public class Knx4Fd extends Protocol {
         }
     }
 
-    public static DatapointMap LoadDatapoints(String dataPointsFile) {
-        DatapointMap m = new DatapointMap();
+    public DatapointMap LoadDatapoints(String dataPointsFile) {
+        DatapointMap datapointMap = new DatapointMap();
         final XMLReader r;
         try {
             r = XMLFactory.getInstance().createXMLReader(dataPointsFile);
-            m.load(r);
+            datapointMap.load(r);
             r.close();
-            return (m);
+            return (datapointMap);
         } catch (KNXMLException ex) {
             LOG.severe(ex.toString());
-            return (m);
+            return (datapointMap);
         }
     }
 
-    public void autoDiscoveringDevices(DatapointMap m) {
-        Collection c = ((DatapointMap) m).getDatapoints();
-        Iterator<Datapoint> iterator = c.iterator();
-        GroupAddress dpAddress = null;
-        String dpName = null;
-        String dpt = null;
+    public void autoDiscoveringDevices(DatapointMap datapointMap) {
+        Collection c = datapointMap.getDatapoints();
+        Iterator iterator = c.iterator();
+        GroupAddress dptAddress = null;
+        String dptName = null;
+        String dptDPT = null;
         ProtocolRead event = null;
 
         // while loop
         while (iterator.hasNext()) {
-            dpAddress = iterator.next().getMainAddress();
-            dpName = iterator.next().getName();
-            dpt = iterator.next().getDPT();
-            System.out.println(dpName + " " + dpAddress + " " + dpt);
-            event = new ProtocolRead(this, "knx", dpAddress.toString());
+            if (iterator.next() instanceof StateDP) {
+                StateDP dpt = (StateDP) iterator.next();
+                dptName = dpt.getName();
+                dptAddress = dpt.getMainAddress();
+                dptDPT = dpt.getDPT();
+                                
+                System.out.println("DPT " + dptName + " " + dptAddress + " " + dpt.getAddresses(true).size() + "  " + dptDPT);
+
+            } else {
+                CommandDP dpt = (CommandDP) iterator.next();
+                dptName = dpt.getName();
+                dptAddress = dpt.getMainAddress();
+                dptDPT = dpt.getDPT();
+
+                System.out.println("DPT " + dptName + " " + dptAddress + " " + dptDPT);
+
+
+            }
+
+
+            //event = new ProtocolRead(this, "knx", dptAddress.toString());
             //event.addProperty("object.class", configuration.getStringProperty(dpt));
             //event.addProperty("object.name", dpName);
-            notifyEvent(event);
+            //notifyEvent(event);
         }
     }
 }
