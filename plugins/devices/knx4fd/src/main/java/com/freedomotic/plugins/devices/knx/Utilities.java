@@ -22,6 +22,9 @@ package com.freedomotic.plugins.devices.knx;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.Map;
 import tuwien.auto.calimero.exception.KNXIllegalArgumentException;
 import tuwien.auto.calimero.link.medium.KNXMediumSettings;
@@ -108,4 +111,26 @@ public class Utilities {
             throw new KNXIllegalArgumentException("unknown medium");
         }
     }
+    
+     public static String getDate() {
+        DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+        Date date = new Date();
+        return dateFormat.format(date);
+    }
+
+    public static long getTimestamp() {
+        Date date = new Date();
+        return date.getTime();
+    }
+
+    public static String getHexString(byte[] b) {
+        String result = "";
+        for (int i = 0; i < b.length; i++) {
+            result = result + Integer.toString((b[i] & 0xff) + 0x100, 16).substring(1);
+        }
+        return result;
+    }
+    
+    
+    
 }

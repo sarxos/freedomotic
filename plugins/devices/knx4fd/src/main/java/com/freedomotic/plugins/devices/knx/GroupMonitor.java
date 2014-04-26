@@ -1,10 +1,4 @@
 /*
- * To change this template, choose Tools | Templates
- * and open the template in the editor.
- */
-package com.freedomotic.plugins.devices.knx;
-
-/*
  * Calimero 2 - A library for KNX network access Copyright (c) 2006, 2011 B.
  * Malinowsky
  *
@@ -22,6 +16,7 @@ package com.freedomotic.plugins.devices.knx;
  * this program; if not, write to the Free Software Foundation, Inc., 59 Temple
  * Place, Suite 330, Boston, MA 02111-1307 USA
  */
+package com.freedomotic.plugins.devices.knx;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -30,9 +25,11 @@ import java.util.HashMap;
 import java.util.Map;
 
 import tuwien.auto.calimero.CloseEvent;
+import tuwien.auto.calimero.DataUnitBuilder;
 import tuwien.auto.calimero.FrameEvent;
 import tuwien.auto.calimero.Settings;
 import tuwien.auto.calimero.cemi.CEMI;
+import tuwien.auto.calimero.cemi.CEMILData;
 import tuwien.auto.calimero.exception.KNXException;
 import tuwien.auto.calimero.exception.KNXIllegalArgumentException;
 import tuwien.auto.calimero.knxnetip.KNXnetIPConnection;
@@ -55,19 +52,19 @@ import tuwien.auto.calimero.log.LogWriter;
  * 
 * @author B. Malinowsky, B. Haumacher
  */
+
 public class GroupMonitor implements Runnable {
 
-  //  private static final String tool = "GroupMonitor";
-  //  private static final String version = "1.1";
-  //  private static final String sep = System.getProperty("line.separator");
-  //  static LogService out = LogManager.getManager().getLogService("tools");
+    private static final short GROUP_READ = 0x00;
+    private static final short GROUP_RESPONSE = 0x40;
+    private static final short GROUP_WRITE = 0x80;
     private final Map<String, Object> options = new HashMap<String, Object>();
     private KNXNetworkLink link;
     private final NetworkLinkListener l = new NetworkLinkListener() {
 
         @Override
         public void linkClosed(CloseEvent e) {
-            Knx4Fd.LOG.info("network monitor closed (" + e.getReason() + ")");
+            Knx4Fd.LOG.info("Network monitor closed (" + e.getReason() + ")");
             synchronized (GroupMonitor.this) {
                 GroupMonitor.this.notify();
             }
@@ -87,13 +84,13 @@ public class GroupMonitor implements Runnable {
     /**
      * Creates a new {@link GroupMonitor} instance using the supplied options.
      * <p> See {@link #main(String[])} for a list of options.
-     *     
+     *
      * @param args list with options
      * @throws KNXIllegalArgumentException on unknown/invalid options
      */
     public GroupMonitor(final String[] args) {
         try {
-// read the command line options
+        // read the command line options
             parseOptions(args);
         } catch (final KNXIllegalArgumentException e) {
             throw e;
@@ -120,7 +117,6 @@ public class GroupMonitor implements Runnable {
      *     
 * @param args command line options for network monitoring
      */
-  
     @Override
     public void run() {
         Exception thrown = null;
@@ -128,7 +124,7 @@ public class GroupMonitor implements Runnable {
         try {
             start();
 
-// just wait for the network monitor to quit
+            // just wait for the network monitor to quit
             synchronized (this) {
                 while (link != null && link.isOpen()) {
                     wait(500);
@@ -150,15 +146,15 @@ public class GroupMonitor implements Runnable {
     /**
      * Starts the network monitor. <p> This method returns after the network
      * monitor was started.
-     *     
-* @throws KNXException on problems creating or connecting the monitor
+     *
+     * @throws KNXException on problems creating or connecting the monitor
      * @throws InterruptedException on interrupted thread
      */
     public void start() throws KNXException, InterruptedException {
-        
+
         link = createLink();
 
-// listen to monitor link events
+        // listen to monitor link events
         link.addLinkListener(l);
     }
 
@@ -176,8 +172,8 @@ public class GroupMonitor implements Runnable {
 
     /**
      * Called by this tool on receiving a monitor indication frame. <p>
-     *     
-* @param e the frame event
+     *
+     * @param e the frame event
      */
     protected void onIndication(final FrameEvent e) {
         logFrame(e);
@@ -185,11 +181,52 @@ public class GroupMonitor implements Runnable {
 
     /**
      * Called by this tool on receiving a monitor confirmation frame. <p>
-     *     
-* @param e the frame event
+     *
+     * @param e the frame event
      */
     protected void onConfirmation(final FrameEvent e) {
         logFrame(e);
+    }
+
+    public void frameReceived(FrameEvent arg0) {
+        try {
+            // RawFrameBase frame = (RawFrameBase)((MonitorFrameEvent) arg0.getFrame()).getRawFrame();
+            CEMILData frame = (CEMILData) arg0.getFrame();
+            final byte[] apdu = frame.getPayload();
+            byte[] asdu;
+
+            int service = DataUnitBuilder.getAPDUService(apdu);
+
+
+            String svc;
+
+            if (service == GROUP_READ) {
+                asdu = new byte[0];
+                svc = "READ";
+            } else if (service == GROUP_WRITE) {
+                asdu = DataUnitBuilder.extractASDU(apdu);
+                svc = "WRITE";
+            } else if (service == GROUP_RESPONSE) {
+                asdu = DataUnitBuilder.extractASDU(apdu);
+                svc = "RESPONSE";
+            } else {
+                asdu = new byte[0];
+                svc = "UNSUPPORTED";
+                System.out.println("unsupported APDU service - ignored, service code = 0x" + Integer.toHexString(service));
+            }
+            String msg =
+                    Utilities.getDate() + "" + " Frame received | "
+                    + "Source: " + frame.getSource() + " // "
+                    + "Destination: " + frame.getDestination() + " // "
+                    + "ASDU (hex): " + Utilities.getHexString(asdu) + " " + "ASDU lenght: " + asdu.length + " // "
+                    + svc;
+
+
+            System.out.println(msg);
+
+        } catch (Exception ex) {
+            System.out.println(ex.getMessage());
+        }
     }
 
     private void logFrame(final FrameEvent e) {
@@ -201,15 +238,15 @@ public class GroupMonitor implements Runnable {
 
     /**
      * Called by this tool on completion. <p>
-     *     
-* @param thrown the thrown exception if operation completed due to an
+     *
+     * @param thrown the thrown exception if operation completed due to an
      * raised exception,
      * <code>null</code> otherwise
      * @param canceled whether the operation got canceled before its planned end
      */
     protected void onCompletion(final Exception thrown, final boolean canceled) {
         if (canceled) {
-            Knx4Fd.LOG.info(" stopped");
+            Knx4Fd.LOG.info("Plugin stopped");
         }
         if (thrown != null) {
             Knx4Fd.LOG.severe(thrown.getMessage() != null ? thrown.getMessage() : thrown.getClass().getName());
@@ -220,14 +257,14 @@ public class GroupMonitor implements Runnable {
      * Creates the KNX network link to access the network specified in
      * <code>options</code>. <p>
      *     
-* @return the KNX network monitor link
+     * @return the KNX network monitor link
      * @throws KNXException on problems on link creation
      * @throws InterruptedException on interrupted thread
      */
     private KNXNetworkLink createLink() throws KNXException, InterruptedException {
         final KNXMediumSettings medium = (KNXMediumSettings) options.get("medium");
         if (options.containsKey("serial")) {
-// create FT1.2 monitor link
+            // create FT1.2 monitor link
             final String p = (String) options.get("serial");
             try {
                 return new KNXNetworkLinkFT12(Integer.parseInt(p), medium);
@@ -235,15 +272,15 @@ public class GroupMonitor implements Runnable {
                 return new KNXNetworkLinkFT12(p, medium);
             }
         }
-// create local and remote socket address for monitor link
+        // create local and remote socket address for monitor link
         InetAddress localHost = (InetAddress) options.get("localhost");
         Integer localPort = (Integer) options.get("localport");
         final InetSocketAddress local = Utilities.createLocalSocket(localHost, localPort);
         final InetSocketAddress host = new InetSocketAddress((InetAddress) options.get("host"),
                 ((Integer) options.get("port")).intValue());
-// create the monitor link, based on the KNXnet/IP protocol
-// specify whether network address translation shall be used,
-// and tell the physical medium of the KNX network
+        // create the monitor link, based on the KNXnet/IP protocol
+        // specify whether network address translation shall be used,
+        // and tell the physical medium of the KNX network
         return new KNXNetworkLinkIP(KNXNetworkLinkIP.TUNNELING, local, host, options.containsKey("nat"), medium);
     }
 
@@ -256,14 +293,14 @@ public class GroupMonitor implements Runnable {
      * options will be ignored. On unknown options, a
      * KNXIllegalArgumentException is thrown.
      *     
-* @param args array with command line options
+     * @param args array with command line options
      */
     private void parseOptions(final String[] args) {
         if (args.length == 0) {
             return;
         }
 
-// add defaults
+        // add defaults
         options.put("port", new Integer(KNXnetIPConnection.DEFAULT_PORT));
         options.put("medium", TPSettings.TP1);
 
@@ -295,9 +332,6 @@ public class GroupMonitor implements Runnable {
             throw new KNXIllegalArgumentException("no host or serial port specified");
         }
     }
-
-   
- 
 
     final class ShutdownHandler extends Thread {
 

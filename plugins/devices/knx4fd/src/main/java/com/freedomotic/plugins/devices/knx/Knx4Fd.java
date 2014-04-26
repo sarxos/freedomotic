@@ -177,7 +177,7 @@ public class Knx4Fd extends Protocol {
                 dptAddress = dpt.getMainAddress();
                 dptDPT = dpt.getDPT();
                                 
-                System.out.println("DPT " + dptName + " " + dptAddress + " " + dpt.getAddresses(true).size() + "  " + dptDPT);
+                System.out.println("DPT " + dptName + " " + dptAddress + " " + + dpt.getExpirationTimeout() + " " + dpt.getAddresses(true).size() + "  " + dptDPT);
 
             } else {
                 CommandDP dpt = (CommandDP) iterator.next();
