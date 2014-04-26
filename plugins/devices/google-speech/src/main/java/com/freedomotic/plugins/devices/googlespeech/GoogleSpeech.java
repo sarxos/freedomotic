@@ -55,21 +55,14 @@ public class GoogleSpeech
     GoogleSpeechGUI pluginGUI = null;
 
     public GoogleSpeech() {
-        //every plugin needs a name and a manifest XML file
         super("Google Speech", "/google-speech/google-speech-manifest.xml");
         POLLING_WAIT = configuration.getIntProperty("time-between-reads", 2000);
-        //POLLING_WAIT is the value of the property "time-between-reads" or 2000 millisecs,
-        //default value if the property does not exist in the manifest
-        setPollingWait(POLLING_WAIT); //millisecs interval between hardware device status reads
-
+        setPollingWait(POLLING_WAIT);
     }
 
     @Override
     protected void onShowGui() {
-        /**
-         * The GUI can be started with a right-click on plugin list on the
-         * desktop frontend (com.freedomotic.jfrontend plugin)
-         */
+
         try {
             UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
             pluginGUI.setVisible(true);
@@ -82,8 +75,6 @@ public class GoogleSpeech
 
     @Override
     protected void onHideGui() {
-        //implement here what to do when the this plugin GUI is closed
-        //for example you can change the plugin description
         setDescription("My GUI is now hidden");
     }
 
@@ -145,8 +136,8 @@ public class GoogleSpeech
 
     void environmentListening() throws IOException {
 
-        String fileName = "recordedFile.wav";//Name your file whatever you want
-
+        String fileName = Info.PATH_DATA_FOLDER + "recordedFile.wav";
+        
         try {
             micAnalyzer.open();
             micAnalyzer.captureAudioToFile(fileName);//Rewrites a 10 second minimum audio clip over and over again.
@@ -229,7 +220,6 @@ public class GoogleSpeech
                 InputStream is = synthesiser.getMP3Data(message);
                 Player player = new Player(is);
                 player.play();
-
             } catch (Exception ex) {
                 ex.printStackTrace();
             }
@@ -254,15 +244,14 @@ public class GoogleSpeech
             }
             out.close();
             inputStream.close();
-            //System.out.println("File is created");
         } catch (IOException e) {
         }
     }
 
     public void startRecognition() {
         mic = new Microphone(AudioFileFormat.Type.WAVE);
-        File recordedFile = new File("recordGUI.wav");//Name your file whatever you want
-        //String filename = "recordGUI.wav";
+        File recordedFile = new File(Info.PATH_DATA_FOLDER+"recordGUI.wav");//Name your file whatever you want
+        
         try {
             mic.captureAudioToFile(recordedFile);
         } catch (Exception ex) {//Microphone not available or some other error.
@@ -290,6 +279,7 @@ public class GoogleSpeech
 
     }
 
+    
     protected class RecognizeThread implements Runnable {
 
         String languageCode = null;
