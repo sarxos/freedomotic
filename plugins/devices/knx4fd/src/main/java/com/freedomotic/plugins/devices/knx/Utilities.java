@@ -111,8 +111,8 @@ public class Utilities {
             throw new KNXIllegalArgumentException("unknown medium");
         }
     }
-    
-     public static String getDate() {
+
+    public static String getDate() {
         DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
         Date date = new Date();
         return dateFormat.format(date);
@@ -130,7 +130,14 @@ public class Utilities {
         }
         return result;
     }
-    
-    
-    
+
+    public static String extractMainAddress(String objectAddress) {
+        String[] result = objectAddress.split("\\[");
+        return result[0];
+    }
+
+    public static String extractDTP(String objectAddress) {
+        String[] result = objectAddress.split("\\]");
+        return result[1];
+    }
 }

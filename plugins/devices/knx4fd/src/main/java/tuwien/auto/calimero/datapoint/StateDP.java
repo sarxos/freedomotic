@@ -275,7 +275,6 @@ public class StateDP extends Datapoint {
                 }
             } else if (tag.equals(TAG_UPDATING)) {
                 while (r.read() == XMLReader.START_TAG) {
-                    System.out.println("Carico updating");
                     updating.add(new GroupAddress(r));
                 }
             } else if (tag.equals(TAG_INVALIDATING)) {

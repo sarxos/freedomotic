@@ -30,6 +30,8 @@ import tuwien.auto.calimero.FrameEvent;
 import tuwien.auto.calimero.Settings;
 import tuwien.auto.calimero.cemi.CEMI;
 import tuwien.auto.calimero.cemi.CEMILData;
+import tuwien.auto.calimero.dptxlator.DPTXlator;
+import tuwien.auto.calimero.dptxlator.TranslatorTypes;
 import tuwien.auto.calimero.exception.KNXException;
 import tuwien.auto.calimero.exception.KNXIllegalArgumentException;
 import tuwien.auto.calimero.knxnetip.KNXnetIPConnection;
@@ -52,12 +54,12 @@ import tuwien.auto.calimero.log.LogWriter;
  * 
 * @author B. Malinowsky, B. Haumacher
  */
-
 public class GroupMonitor implements Runnable {
 
     private static final short GROUP_READ = 0x00;
     private static final short GROUP_RESPONSE = 0x40;
     private static final short GROUP_WRITE = 0x80;
+    private Knx4Fd pluginRef;
     private final Map<String, Object> options = new HashMap<String, Object>();
     private KNXNetworkLink link;
     private final NetworkLinkListener l = new NetworkLinkListener() {
@@ -88,9 +90,11 @@ public class GroupMonitor implements Runnable {
      * @param args list with options
      * @throws KNXIllegalArgumentException on unknown/invalid options
      */
-    public GroupMonitor(final String[] args) {
+    public GroupMonitor(final String[] args, Knx4Fd pluginRef) {
+        this.pluginRef = pluginRef;
+
         try {
-        // read the command line options
+            // read the command line options
             parseOptions(args);
         } catch (final KNXIllegalArgumentException e) {
             throw e;
@@ -176,7 +180,7 @@ public class GroupMonitor implements Runnable {
      * @param e the frame event
      */
     protected void onIndication(final FrameEvent e) {
-        logFrame(e);
+        frameReceived(e);
     }
 
     /**
@@ -185,18 +189,16 @@ public class GroupMonitor implements Runnable {
      * @param e the frame event
      */
     protected void onConfirmation(final FrameEvent e) {
-        logFrame(e);
+        frameReceived(e);
     }
 
-    public void frameReceived(FrameEvent arg0) {
+    public void frameReceived(FrameEvent e) {
         try {
-            // RawFrameBase frame = (RawFrameBase)((MonitorFrameEvent) arg0.getFrame()).getRawFrame();
-            CEMILData frame = (CEMILData) arg0.getFrame();
+            CEMILData frame = (CEMILData) e.getFrame();
             final byte[] apdu = frame.getPayload();
             byte[] asdu;
 
             int service = DataUnitBuilder.getAPDUService(apdu);
-
 
             String svc;
 
@@ -221,8 +223,16 @@ public class GroupMonitor implements Runnable {
                     + "ASDU (hex): " + Utilities.getHexString(asdu) + " " + "ASDU lenght: " + asdu.length + " // "
                     + svc;
 
-
-            System.out.println(msg);
+            msg = msg + " Found object " + pluginRef.getObjectAddress(frame.getDestination().toString());
+            // starts value translation based on DTP type
+            String DTP = pluginRef.getObjectAddress(frame.getDestination().toString());
+            Integer mainNumber = Integer.valueOf(DTP.substring(0,1));
+            DPTXlator translator = TranslatorTypes.createTranslator(mainNumber, Utilities.extractDTP(pluginRef.getObjectAddress(frame.getDestination().toString())));
+            translator.setData(asdu);
+            String value = translator.getValue();
+            msg = msg + " value translated " + value;
+            pluginRef.notifyChanges(pluginRef.getObjectAddress(frame.getDestination().toString()), value);
+            Knx4Fd.LOG.info(msg);
 
         } catch (Exception ex) {
             System.out.println(ex.getMessage());
@@ -256,7 +266,7 @@ public class GroupMonitor implements Runnable {
     /**
      * Creates the KNX network link to access the network specified in
      * <code>options</code>. <p>
-     *     
+     *
      * @return the KNX network monitor link
      * @throws KNXException on problems on link creation
      * @throws InterruptedException on interrupted thread
@@ -292,7 +302,7 @@ public class GroupMonitor implements Runnable {
      * showing usage information). On occurrence of such an option, other
      * options will be ignored. On unknown options, a
      * KNXIllegalArgumentException is thrown.
-     *     
+     *
      * @param args array with command line options
      */
     private void parseOptions(final String[] args) {

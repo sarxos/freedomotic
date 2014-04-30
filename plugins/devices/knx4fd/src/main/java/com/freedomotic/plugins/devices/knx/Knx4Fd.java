@@ -24,14 +24,19 @@ import com.freedomotic.api.Protocol;
 import com.freedomotic.app.Freedomotic;
 import com.freedomotic.events.ProtocolRead;
 import com.freedomotic.exceptions.UnableToExecuteException;
+import com.freedomotic.objects.EnvObjectLogic;
+import com.freedomotic.objects.EnvObjectPersistence;
 import com.freedomotic.reactions.Command;
 import com.freedomotic.util.Info;
 import java.io.IOException;
 import java.net.UnknownHostException;
 import com.freedomotic.plugins.devices.knx.ProcComm.ShutdownHandler;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.logging.Logger;
+import org.apache.commons.lang.StringUtils;
 import tuwien.auto.calimero.GroupAddress;
 import tuwien.auto.calimero.datapoint.*;
 import tuwien.auto.calimero.exception.KNXException;
@@ -48,16 +53,17 @@ public class Knx4Fd extends Protocol {
     public final String EIBD_SERVER_PORT = configuration.getStringProperty("eibd-server-port", "3671");
     public final String EIBD_SERVER_DATACONTROL = configuration.getStringProperty("eibd-server-datacontrol", "127.0.1.1");
     public final String DATAPOINTS_FILE = configuration.getStringProperty("datapoints-file", "/knx4fd/datapointMap.xml");
-    //KNXServer serverObj;
-    public NetworkMonitor networkMonitor = null;
+    public final String PROTOCOL_NAME = configuration.getStringProperty("protocol.name", "knx");
+    public GroupMonitor groupMonitor = null;
     public DatapointModel datapointModel;
     public DatapointMap datapointMap;
     private final String dataPointsFile = Info.getDevicesPath() + DATAPOINTS_FILE;
+    HashMap<String, String> knxGroupAddressMap = new HashMap<String, String>();
     KnxFrame KnxGui = new KnxFrame(this);
 
     public Knx4Fd() {
         super("Knx", "/knx4fd/knx4fd-manifest.xml");
-        setPollingWait(2000); //waits 2000ms in onRun method before call onRun() again
+        setPollingWait(-1);
     }
 
     protected void onShowGui() {
@@ -66,49 +72,32 @@ public class Knx4Fd extends Protocol {
 
     @Override
     public void onStart() {
-        //serverObj = new KNXServer(this);
-        //try {
-        //  if (serverObj.connectToEIBD(EIBD_SERVER_ADDRESS, EIBD_SERVER_PORT)) {
-        //    LOG.info("Connected to EIBD server!");
-        // }
-        //} catch (InterruptedException ex) {
-        //  LOG.severe(ex.toString());
-        // }
-        //NetworkMon();
-        datapointMap = LoadDatapoints(dataPointsFile);
-        autoDiscoveringDevices(datapointMap);
+        //datapointMap = LoadDatapoints(dataPointsFile);
+        //initialization(datapointMap);
+        //
     }
 
     @Override
     public void onStop() {
-        if (networkMonitor != null) {
-            networkMonitor.quit();
+        if (groupMonitor != null) {
+            groupMonitor.quit();
         }
     }
 
     @Override
     protected void onRun() {
-        //called in a loop while this plugin is running
-        //loops waittime is specified using setPollingWait()
+        knxGroupAddressMap();
+        GroupMon();
+
     }
 
     @Override
     protected void onCommand(Command c) throws IOException, UnableToExecuteException {
-        //this method receives freedomotic commands send on channel app.actuators.protocol.arduinousb.in
-        //ProcessCommunication("127.0.0.1", "127.0.1.1", "3671", "write", "switch", "off", "0/0/1");
-        // try {
-        // serverObj.getListener().sendDataToDevice("0/0/1", "on");
-        //   serverObj.getListener().sendDataToDevice(c.getProperty("address"), c.getProperty("value"));
-        // } catch (KNXException ex) {
-        //   LOG.severe(ex.toString());
-        // }
-        String address = c.getProperty("address");
-        String dpt = c.getProperty("dpt");
+
+        String address = Utilities.extractMainAddress(c.getProperty("address"));
+        String dpt = Utilities.extractDTP(c.getProperty("address"));
         String operation = c.getProperty("operation");
         String value = c.getProperty("value");
-
-
-
 
         String[] args = {"-p", EIBD_SERVER_PORT, "-localhost", EIBD_SERVER_ADDRESS, EIBD_SERVER_DATACONTROL, operation, dpt, value, address};
 
@@ -132,18 +121,17 @@ public class Knx4Fd extends Protocol {
         throw new UnsupportedOperationException("Not supported yet.");
     }
 
-    public void NetworkMon() {
+    public void GroupMon() {
         String[] args = {"-p", EIBD_SERVER_PORT, "-localhost", EIBD_SERVER_ADDRESS, EIBD_SERVER_DATACONTROL};
 
         try {
             // if listener is null, we create our default one
-            //final NetworkMonitor m = new NetworkMonitor(args);
-            networkMonitor = new NetworkMonitor(args);
-            final NetworkMonitor.ShutdownHandler sh = networkMonitor.new ShutdownHandler().register();
-            networkMonitor.run();
+            groupMonitor = new GroupMonitor(args, this);
+            final GroupMonitor.ShutdownHandler sh = groupMonitor.new ShutdownHandler().register();
+            groupMonitor.run();
             sh.unregister();
         } catch (final KNXIllegalArgumentException e) {
-            LOG.severe("NetworkMon() error parsing options");
+            LOG.severe("groupMon() error parsing options");
         }
     }
 
@@ -161,12 +149,40 @@ public class Knx4Fd extends Protocol {
         }
     }
 
-    public void autoDiscoveringDevices(DatapointMap datapointMap) {
+    public String getObjectAddress(String groupAddress) {
+        return (knxGroupAddressMap.get(groupAddress));
+
+    }
+
+    public void knxGroupAddressMap() {
+        ArrayList<EnvObjectLogic> objectsList = EnvObjectPersistence.getObjectByProtocol(configuration.getStringProperty("protocol.name", "knx"));
+        Iterator iterator = objectsList.iterator();
+        if (!objectsList.isEmpty()) {
+            while (iterator.hasNext()) {
+                EnvObjectLogic e = (EnvObjectLogic) iterator.next();
+                // maps main address
+                knxGroupAddressMap.put(Utilities.extractMainAddress(e.getPojo().getPhisicalAddress()), e.getPojo().getPhisicalAddress());
+                // extracts substring [] containing the list of updating addresses
+                String updatingAddresses = StringUtils.substringBetween(e.getPojo().getPhisicalAddress(), "[", "]");;
+                if (updatingAddresses.length() > 0) {
+                    String updAddress[] = updatingAddresses.split(",");
+                    for (Integer i = 0; i < updAddress.length; i++) {
+                        // adds any updating address to the map linking it to the Freedomotic object physical address
+                        knxGroupAddressMap.put(updAddress[i], e.getPojo().getPhisicalAddress());
+                    }
+                }
+
+            }
+        }
+    }
+
+    public void initialization(DatapointMap datapointMap) {
         Collection c = datapointMap.getDatapoints();
         Iterator iterator = c.iterator();
         GroupAddress dptAddress = null;
         String dptName = null;
         String dptDPT = null;
+        String address = null;
         ProtocolRead event = null;
 
         // while loop
@@ -174,10 +190,9 @@ public class Knx4Fd extends Protocol {
             if (iterator.next() instanceof StateDP) {
                 StateDP dpt = (StateDP) iterator.next();
                 dptName = dpt.getName();
-                dptAddress = dpt.getMainAddress();
-                dptDPT = dpt.getDPT();
-                                
-                System.out.println("DPT " + dptName + " " + dptAddress + " " + + dpt.getExpirationTimeout() + " " + dpt.getAddresses(true).size() + "  " + dptDPT);
+
+                address = dpt.getMainAddress() + "" + dpt.getAddresses(true) + dpt.getDPT();
+                System.out.println("DPT " + dptName + " " + address + " main address: " + Utilities.extractMainAddress(address) + " DTP:" + Utilities.extractDTP(address));
 
             } else {
                 CommandDP dpt = (CommandDP) iterator.next();
@@ -191,10 +206,14 @@ public class Knx4Fd extends Protocol {
             }
 
 
-            //event = new ProtocolRead(this, "knx", dptAddress.toString());
-            //event.addProperty("object.class", configuration.getStringProperty(dpt));
-            //event.addProperty("object.name", dpName);
-            //notifyEvent(event);
         }
+    }
+
+    public void notifyChanges(String objectAddress, String value) {
+        ProtocolRead event = new ProtocolRead(this, PROTOCOL_NAME, objectAddress);
+        //event.addProperty("object.class", configuration.getStringProperty(dpt));
+        //event.addProperty("object.name", dpName);
+        event.addProperty("value", value);
+        notifyEvent(event);
     }
 }

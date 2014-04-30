@@ -7,9 +7,9 @@
         <property name="protocol.name" value="knx"/>
         <property name="short-name" value="knx"/>
         <property name="startup-time" value="on load"/>
-        <property name="eibd-server-address" value="127.0.0.1"/>
+        <property name="eibd-server-address" value="192.168.66.152"/>
         <property name="eibd-server-port" value="3671"/>
-        <property name="eibd-server-datacontrol" value="127.0.1.1"/>
+        <property name="eibd-server-datacontrol" value="172.19.50.82"/>
         <property name="datapoints-file" value="/knx4fd/datapoints.xml"/>
 
         <!-- MAPPING KNX DTP - FREEDOMOTIC OBJECT CLASSES --> 
