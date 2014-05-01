@@ -74,7 +74,6 @@ public class Knx4Fd extends Protocol {
     public void onStart() {
         //datapointMap = LoadDatapoints(dataPointsFile);
         //initialization(datapointMap);
-        //
     }
 
     @Override
@@ -86,8 +85,12 @@ public class Knx4Fd extends Protocol {
 
     @Override
     protected void onRun() {
+        // creates a map of all knx group addresses related to knx configured objects
         knxGroupAddressMap();
+        // starts bus monitoring for events
         GroupMon();
+
+
 
     }
 
@@ -162,6 +165,7 @@ public class Knx4Fd extends Protocol {
                 EnvObjectLogic e = (EnvObjectLogic) iterator.next();
                 // maps main address
                 knxGroupAddressMap.put(Utilities.extractMainAddress(e.getPojo().getPhisicalAddress()), e.getPojo().getPhisicalAddress());
+                //readKnxStatus(Utilities.extractMainAddress(e.getPojo().getPhisicalAddress()), Utilities.extractDTP(e.getPojo().getPhisicalAddress()), "read");
                 // extracts substring [] containing the list of updating addresses
                 String updatingAddresses = StringUtils.substringBetween(e.getPojo().getPhisicalAddress(), "[", "]");;
                 if (updatingAddresses.length() > 0) {
@@ -169,6 +173,7 @@ public class Knx4Fd extends Protocol {
                     for (Integer i = 0; i < updAddress.length; i++) {
                         // adds any updating address to the map linking it to the Freedomotic object physical address
                         knxGroupAddressMap.put(updAddress[i], e.getPojo().getPhisicalAddress());
+                        readKnxStatus(updAddress[i], Utilities.extractDTP(e.getPojo().getPhisicalAddress()), "read");
                     }
                 }
 
@@ -209,11 +214,34 @@ public class Knx4Fd extends Protocol {
         }
     }
 
-    public void notifyChanges(String objectAddress, String value) {
+    public void notifyChanges(String objectAddress, String DPT, String value, String objectName, String objectClass) {
         ProtocolRead event = new ProtocolRead(this, PROTOCOL_NAME, objectAddress);
-        //event.addProperty("object.class", configuration.getStringProperty(dpt));
-        //event.addProperty("object.name", dpName);
+        if (objectClass != null) {
+            event.addProperty("object.class", configuration.getStringProperty(DPT, "Light"));
+        }
+        if (objectName != null) {
+            event.addProperty("object.name", objectName);
+        }
+        if (value.equalsIgnoreCase("on")) {
+            value = "1";
+        } else {
+            value = "0";
+        }
         event.addProperty("value", value);
         notifyEvent(event);
+    }
+
+    public void readKnxStatus(String objectAddress, String DTP, String operation) {
+        String[] args = {"-p", EIBD_SERVER_PORT, "-localhost", EIBD_SERVER_ADDRESS, EIBD_SERVER_DATACONTROL, operation, DTP, objectAddress};
+
+        try {
+            final ProcComm pc = new ProcComm(args);
+            final ShutdownHandler sh = pc.new ShutdownHandler().register();
+            pc.run();
+            sh.unregister();
+        } catch (final Throwable t) {
+            LOG.severe("ProcessCommunication parsing options error");
+        }
+
     }
 }

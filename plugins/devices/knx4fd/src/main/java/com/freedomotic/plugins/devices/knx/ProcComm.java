@@ -263,13 +263,13 @@ public class ProcComm implements Runnable {
         // this is a convenient way to let the process communicator
         // handle the DPT stuff, so an already formatted string will be returned
         final Datapoint dp = new StateDP(main, "", 0, Utilities.getDPT(options));
-        System.out.println("Read=" + read + " main=" + main + " dtp=" + Utilities.getDPT(options));
+        //System.out.println("Read=" + read + " main=" + main + " dtp=" + Utilities.getDPT(options));
         final String s;
         if (read) {
             s = "Read value: " + pc.read(dp);
         } else {
-// note, a write to a non existing datapoint might finish successfully,
-// too.. no check for existence or read back of a written value is done
+        // note, a write to a non existing datapoint might finish successfully,
+        // too.. no check for existence or read back of a written value is done
             pc.write(dp, (String) options.get("value"));
             s = "Write successful"; // FOR DEBUG
         }

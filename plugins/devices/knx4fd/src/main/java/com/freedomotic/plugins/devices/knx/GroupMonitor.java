@@ -119,7 +119,7 @@ public class GroupMonitor implements Runnable {
      * FT1.2 serial communication</li> <li><code>-medium -m</code> <i>id</i>
      * &nbsp;KNX medium [tp0|tp1|p110|p132|rf] (defaults to tp1)</li> </ul>
      *     
-* @param args command line options for network monitoring
+     * @param args command line options for network monitoring
      */
     @Override
     public void run() {
@@ -225,13 +225,13 @@ public class GroupMonitor implements Runnable {
 
             msg = msg + " Found object " + pluginRef.getObjectAddress(frame.getDestination().toString());
             // starts value translation based on DTP type
-            String DTP = pluginRef.getObjectAddress(frame.getDestination().toString());
-            Integer mainNumber = Integer.valueOf(DTP.substring(0,1));
+            String DPT = pluginRef.getObjectAddress(frame.getDestination().toString());
+            Integer mainNumber = Integer.valueOf(DPT.substring(0,1));
             DPTXlator translator = TranslatorTypes.createTranslator(mainNumber, Utilities.extractDTP(pluginRef.getObjectAddress(frame.getDestination().toString())));
             translator.setData(asdu);
             String value = translator.getValue();
             msg = msg + " value translated " + value;
-            pluginRef.notifyChanges(pluginRef.getObjectAddress(frame.getDestination().toString()), value);
+            pluginRef.notifyChanges(pluginRef.getObjectAddress(frame.getDestination().toString()), DPT, value, null, null);
             Knx4Fd.LOG.info(msg);
 
         } catch (Exception ex) {
@@ -239,13 +239,7 @@ public class GroupMonitor implements Runnable {
         }
     }
 
-    private void logFrame(final FrameEvent e) {
-        CEMI frame = e.getFrame();
-        final StringBuffer sb = new StringBuffer();
-        sb.append(frame.toString());
-        Knx4Fd.LOG.info(sb.toString());
-    }
-
+  
     /**
      * Called by this tool on completion. <p>
      *

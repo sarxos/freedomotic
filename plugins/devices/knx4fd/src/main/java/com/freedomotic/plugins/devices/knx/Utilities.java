@@ -123,6 +123,12 @@ public class Utilities {
         return date.getTime();
     }
 
+     /**
+     * Converts a byte array to a hex string
+     *
+     * @param  byte array to convert
+     * @return string of converted value to hex
+     */
     public static String getHexString(byte[] b) {
         String result = "";
         for (int i = 0; i < b.length; i++) {
