@@ -57,7 +57,7 @@ public class Knx4Fd extends Protocol {
     public GroupMonitor groupMonitor = null;
     public DatapointModel datapointModel;
     public DatapointMap datapointMap;
-    private final String dataPointsFile = Info.getDevicesPath() + DATAPOINTS_FILE;
+    //private final String dataPointsFile = Info.getDevicesPath() + DATAPOINTS_FILE;
     HashMap<String, String> knxGroupAddressMap = new HashMap<String, String>();
     KnxFrame KnxGui = new KnxFrame(this);
 
@@ -72,8 +72,6 @@ public class Knx4Fd extends Protocol {
 
     @Override
     public void onStart() {
-        //datapointMap = LoadDatapoints(dataPointsFile);
-        //initialization(datapointMap);
     }
 
     @Override
@@ -197,8 +195,7 @@ public class Knx4Fd extends Protocol {
                 dptName = dpt.getName();
 
                 address = dpt.getMainAddress() + "" + dpt.getAddresses(true) + dpt.getDPT();
-                System.out.println("DPT " + dptName + " " + address + " main address: " + Utilities.extractMainAddress(address) + " DTP:" + Utilities.extractDTP(address));
-
+                KnxGui.writeDatapointTextArea("DPT " + dptName + " " + address + " main address: " + Utilities.extractMainAddress(address) + " DTP:" + Utilities.extractDTP(address));
             } else {
                 CommandDP dpt = (CommandDP) iterator.next();
                 dptName = dpt.getName();

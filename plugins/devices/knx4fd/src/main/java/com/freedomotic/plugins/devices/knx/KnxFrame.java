@@ -4,10 +4,14 @@
  */
 package com.freedomotic.plugins.devices.knx;
 
+import java.io.File;
 import java.util.Collection;
 import java.util.Iterator;
+import javax.swing.JFileChooser;
 import javax.swing.JPanel;
 import javax.swing.JTable;
+import javax.swing.filechooser.FileFilter;
+import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.table.DefaultTableModel;
 import tuwien.auto.calimero.datapoint.Datapoint;
 import tuwien.auto.calimero.datapoint.DatapointMap;
@@ -25,11 +29,16 @@ public class KnxFrame extends javax.swing.JFrame {
      */
     public KnxFrame(Knx4Fd pluginReference) {
         this.pluginReference = pluginReference;
-      //  DatapointMap m = Knx.LoadDatapoints(pluginReference.dataPointsFile);
-        
+     
         initComponents();
-      //  DisplayData(m);
+        //  DisplayData(m);
     }
+    
+    public void writeDatapointTextArea (String data) {
+        String oldData = jTextAreaDatapoints.getText();
+        jTextAreaDatapoints.setText(oldData + "\n" + data);
+    }
+            
 
     /**
      * This method is called from within the constructor to initialize the form.
@@ -40,97 +49,186 @@ public class KnxFrame extends javax.swing.JFrame {
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
-        jTabbedPane1 = new javax.swing.JTabbedPane();
+        jTabbedPane2 = new javax.swing.JTabbedPane();
+        jPanel1 = new javax.swing.JPanel();
         jScrollPane1 = new javax.swing.JScrollPane();
-        table = new javax.swing.JTable();
+        jTextArea1 = new javax.swing.JTextArea();
+        jButton1 = new javax.swing.JButton();
+        jTextField1 = new javax.swing.JTextField();
+        jTextField2 = new javax.swing.JTextField();
+        jLabel1 = new javax.swing.JLabel();
+        jLabel2 = new javax.swing.JLabel();
+        jPanel2 = new javax.swing.JPanel();
+        jButtonDatapointsImport = new javax.swing.JButton();
+        jButtonSelectDatapointFile = new javax.swing.JButton();
+        jTextFieldDatapointsFile = new javax.swing.JTextField();
+        jScrollPane2 = new javax.swing.JScrollPane();
+        jTextAreaDatapoints = new javax.swing.JTextArea();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
-        table.setModel(new javax.swing.table.DefaultTableModel(
-            new Object [][] {
-                {null, null, null, null},
-                {null, null, null, null},
-                {null, null, null, null},
-                {null, null, null, null}
-            },
-            new String [] {
-                "Title 1", "Title 2", "Title 3", "Title 4"
-            }
-        ));
-        jScrollPane1.setViewportView(table);
+        jTextArea1.setColumns(20);
+        jTextArea1.setRows(5);
+        jScrollPane1.setViewportView(jTextArea1);
 
-        jTabbedPane1.addTab("tab1", jScrollPane1);
+        jButton1.setText("Discover");
+
+        jTextField1.setText("127.0.0.1");
+        jTextField1.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jTextField1ActionPerformed(evt);
+            }
+        });
+
+        jTextField2.setText("3671");
+
+        jLabel1.setText("Hostname");
+
+        jLabel2.setText("Port");
+
+        javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
+        jPanel1.setLayout(jPanel1Layout);
+        jPanel1Layout.setHorizontalGroup(
+            jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel1Layout.createSequentialGroup()
+                .addGap(21, 21, 21)
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(jPanel1Layout.createSequentialGroup()
+                        .addComponent(jLabel1)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jTextField1, javax.swing.GroupLayout.PREFERRED_SIZE, 91, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(18, 18, 18)
+                        .addComponent(jLabel2)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jTextField2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(30, 30, 30)
+                        .addComponent(jButton1))
+                    .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 501, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addContainerGap(62, Short.MAX_VALUE))
+        );
+        jPanel1Layout.setVerticalGroup(
+            jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel1Layout.createSequentialGroup()
+                .addGap(21, 21, 21)
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jLabel1)
+                    .addComponent(jTextField1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jLabel2)
+                    .addComponent(jTextField2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jButton1))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 180, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addContainerGap(79, Short.MAX_VALUE))
+        );
+
+        jTabbedPane2.addTab("Discover", jPanel1);
+
+        jButtonDatapointsImport.setText("Import");
+        jButtonDatapointsImport.setEnabled(false);
+        jButtonDatapointsImport.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButtonDatapointsImportActionPerformed(evt);
+            }
+        });
+
+        jButtonSelectDatapointFile.setText("Select file");
+        jButtonSelectDatapointFile.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButtonSelectDatapointFileActionPerformed(evt);
+            }
+        });
+
+        jTextFieldDatapointsFile.setText("no datapoints file selected");
+
+        jTextAreaDatapoints.setColumns(20);
+        jTextAreaDatapoints.setRows(5);
+        jScrollPane2.setViewportView(jTextAreaDatapoints);
+
+        javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
+        jPanel2.setLayout(jPanel2Layout);
+        jPanel2Layout.setHorizontalGroup(
+            jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel2Layout.createSequentialGroup()
+                .addContainerGap()
+                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(jPanel2Layout.createSequentialGroup()
+                        .addComponent(jTextFieldDatapointsFile, javax.swing.GroupLayout.DEFAULT_SIZE, 383, Short.MAX_VALUE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                        .addComponent(jButtonSelectDatapointFile)
+                        .addGap(26, 26, 26)
+                        .addComponent(jButtonDatapointsImport))
+                    .addComponent(jScrollPane2))
+                .addContainerGap())
+        );
+        jPanel2Layout.setVerticalGroup(
+            jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel2Layout.createSequentialGroup()
+                .addGap(27, 27, 27)
+                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jTextFieldDatapointsFile, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jButtonSelectDatapointFile)
+                    .addComponent(jButtonDatapointsImport))
+                .addGap(18, 18, 18)
+                .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 203, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addContainerGap(44, Short.MAX_VALUE))
+        );
+
+        jTabbedPane2.addTab("Import datapoints", jPanel2);
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(layout.createSequentialGroup()
-                .addGap(20, 20, 20)
-                .addComponent(jTabbedPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 542, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(24, Short.MAX_VALUE))
+            .addComponent(jTabbedPane2)
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
-                .addGap(48, 48, 48)
-                .addComponent(jTabbedPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 100, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(152, Short.MAX_VALUE))
+                .addComponent(jTabbedPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 358, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(0, 0, Short.MAX_VALUE))
         );
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
-    private void DisplayData(DatapointMap m) {
+    private void jTextField1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jTextField1ActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_jTextField1ActionPerformed
 
+    private void jButtonSelectDatapointFileActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonSelectDatapointFileActionPerformed
+        JFileChooser jfc;
+        jfc = new JFileChooser();
+        FileFilter filter = new FileNameExtensionFilter("Datapoints File", "xml");
+        jfc.setFileFilter(filter);
+        File f = new File(System.getProperty("user.dir"));
+        jfc.setCurrentDirectory(f);
+        jfc.showOpenDialog(this);
+        File selFile = jfc.getSelectedFile();
+        jTextFieldDatapointsFile.setText(selFile.getAbsolutePath());
+        jButtonDatapointsImport.setEnabled(true);
+    }//GEN-LAST:event_jButtonSelectDatapointFileActionPerformed
 
+    private void jButtonDatapointsImportActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonDatapointsImportActionPerformed
+        pluginReference.datapointMap = pluginReference.LoadDatapoints(jTextFieldDatapointsFile.getText());
+        pluginReference.initialization(pluginReference.datapointMap);
+    }//GEN-LAST:event_jButtonDatapointsImportActionPerformed
 
-
-        /*
-         * Collection c = ((DatapointMap) m).getDatapoints(); DefaultTableModel
-         * aModel = new DefaultTableModel(); if (!c.isEmpty()) {
-         *
-         * //setting the column name //Object[] tableColumnNames = new
-         * Object[2]; //tableColumnNames[0] = "Datapoint Name";
-         * //tableColumnNames[1] = "Knx Address";
-         * //aModel.setColumnIdentifiers(tableColumnNames); if (c == null) {
-         * this.tbDatapoints.setModel(aModel); return; }
-         *
-         * Object[] objects = new Object[2]; Iterator<Datapoint> iterator =
-         * c.iterator(); //populating the tablemodel while (iterator.hasNext())
-         * { objects[0] = iterator.next().getName(); objects[1] =
-         * iterator.next().getMainAddress();
-         *
-         * tbDatapoints.; }
-         *
-         * //binding the jtable to the model
-         * //this.tbDatapoints.setModel(aModel); } else { System.out.println("C
-         * é vuota");
-         *
-         */
-
-        //JPanel panel = new JPanel();
-        String data[][] = {{"Vinod", "100"}, {"Raju", "200"}, {"Ranju", "300"}};
-        String col[] = {"Name", "code"};
-        DefaultTableModel model = new DefaultTableModel(data, col);
-        JTable table = new JTable(model);
-        //Insert first position
-        model.insertRow(0, new Object[]{"Ranjan", "50"});
-        //Insert 4 position
-        model.insertRow(3, new Object[]{"Amar", "600"});
-        //Insert last position
-        model.insertRow(table.getRowCount(), new Object[]{"Sushil", "600"});
-        this.add(table);
-        //this.add(panel);
-        //panel.setVisible(true);
-        table.setVisible(true);
-        
-        
-
-    }
+    
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JButton jButton1;
+    private javax.swing.JButton jButtonDatapointsImport;
+    private javax.swing.JButton jButtonSelectDatapointFile;
+    private javax.swing.JLabel jLabel1;
+    private javax.swing.JLabel jLabel2;
+    private javax.swing.JPanel jPanel1;
+    private javax.swing.JPanel jPanel2;
     private javax.swing.JScrollPane jScrollPane1;
-    private javax.swing.JTabbedPane jTabbedPane1;
-    private javax.swing.JTable table;
+    private javax.swing.JScrollPane jScrollPane2;
+    private javax.swing.JTabbedPane jTabbedPane2;
+    private javax.swing.JTextArea jTextArea1;
+    private javax.swing.JTextArea jTextAreaDatapoints;
+    private javax.swing.JTextField jTextField1;
+    private javax.swing.JTextField jTextField2;
+    private javax.swing.JTextField jTextFieldDatapointsFile;
     // End of variables declaration//GEN-END:variables
 }

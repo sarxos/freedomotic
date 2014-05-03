@@ -20,6 +20,16 @@
         <property name="9.006" value="Barometer"/>
         <property name="9.007" value="Hygrometer"/> 
      </properties>
+ <tuples>
+        <tuple>
+            <property name="object.class" value="Thermostat"/>
+            <property name="temperature" value="Knx reads temperature sensor"/>
+        </tuple>
+        <tuple>
+            <property name="object.class" value="Light Sensor"/>
+            <property name="luminosity" value="Knx reads luminosity sensor"/>
+        </tuple>
+</tuples>
 </config>
 
                 
