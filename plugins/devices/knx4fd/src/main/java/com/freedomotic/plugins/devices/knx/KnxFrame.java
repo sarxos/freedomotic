@@ -1,12 +1,30 @@
-/*
- * To change this template, choose Tools | Templates
- * and open the template in the editor.
+/**
+ *
+ * Copyright (c) 2009-2014 Freedomotic team http://freedomotic.com
+ *
+ * This file is part of Freedomotic
+ *
+ * This Program is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License as published by the Free Software
+ * Foundation; either version 2, or (at your option) any later version.
+ *
+ * This Program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
+ * details.
+ *
+ * You should have received a copy of the GNU General Public License along with
+ * Freedomotic; see the file COPYING. If not, see
+ * <http://www.gnu.org/licenses/>.
  */
 package com.freedomotic.plugins.devices.knx;
 
+import com.freedomotic.plugins.devices.knx.Discover.ShutdownHandler;
 import java.io.File;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.swing.JFileChooser;
 import javax.swing.JPanel;
 import javax.swing.JTable;
@@ -15,10 +33,11 @@ import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.table.DefaultTableModel;
 import tuwien.auto.calimero.datapoint.Datapoint;
 import tuwien.auto.calimero.datapoint.DatapointMap;
+import tuwien.auto.calimero.exception.KNXException;
 
 /**
  *
- * @author mauro
+ * @author Mauro Cicolella <mcicolella@libero.it>
  */
 public class KnxFrame extends javax.swing.JFrame {
 
@@ -29,16 +48,19 @@ public class KnxFrame extends javax.swing.JFrame {
      */
     public KnxFrame(Knx4Fd pluginReference) {
         this.pluginReference = pluginReference;
-     
+
         initComponents();
-        //  DisplayData(m);
     }
-    
-    public void writeDatapointTextArea (String data) {
+
+    public void writeDatapointTextArea(String data) {
         String oldData = jTextAreaDatapoints.getText();
         jTextAreaDatapoints.setText(oldData + "\n" + data);
     }
-            
+
+    public void writeDiscoverTextArea(String data) {
+        String oldData = jTextAreaDiscover.getText();
+        jTextAreaDiscover.setText(oldData + "\n" + data);
+    }
 
     /**
      * This method is called from within the constructor to initialize the form.
@@ -52,11 +74,9 @@ public class KnxFrame extends javax.swing.JFrame {
         jTabbedPane2 = new javax.swing.JTabbedPane();
         jPanel1 = new javax.swing.JPanel();
         jScrollPane1 = new javax.swing.JScrollPane();
-        jTextArea1 = new javax.swing.JTextArea();
-        jButton1 = new javax.swing.JButton();
-        jTextField1 = new javax.swing.JTextField();
-        jTextField2 = new javax.swing.JTextField();
-        jLabel1 = new javax.swing.JLabel();
+        jTextAreaDiscover = new javax.swing.JTextArea();
+        jButtonDiscover = new javax.swing.JButton();
+        jTextFieldPort = new javax.swing.JTextField();
         jLabel2 = new javax.swing.JLabel();
         jPanel2 = new javax.swing.JPanel();
         jButtonDatapointsImport = new javax.swing.JButton();
@@ -67,22 +87,18 @@ public class KnxFrame extends javax.swing.JFrame {
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
-        jTextArea1.setColumns(20);
-        jTextArea1.setRows(5);
-        jScrollPane1.setViewportView(jTextArea1);
+        jTextAreaDiscover.setColumns(20);
+        jTextAreaDiscover.setRows(5);
+        jScrollPane1.setViewportView(jTextAreaDiscover);
 
-        jButton1.setText("Discover");
-
-        jTextField1.setText("127.0.0.1");
-        jTextField1.addActionListener(new java.awt.event.ActionListener() {
+        jButtonDiscover.setText("Discover");
+        jButtonDiscover.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jTextField1ActionPerformed(evt);
+                jButtonDiscoverActionPerformed(evt);
             }
         });
 
-        jTextField2.setText("3671");
-
-        jLabel1.setText("Hostname");
+        jTextFieldPort.setText("3671");
 
         jLabel2.setText("Port");
 
@@ -94,31 +110,27 @@ public class KnxFrame extends javax.swing.JFrame {
                 .addGap(21, 21, 21)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addComponent(jLabel1)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(jTextField1, javax.swing.GroupLayout.PREFERRED_SIZE, 91, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(18, 18, 18)
+                        .addGap(193, 193, 193)
                         .addComponent(jLabel2)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(jTextField2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addComponent(jTextFieldPort, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addGap(30, 30, 30)
-                        .addComponent(jButton1))
-                    .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 501, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addContainerGap(62, Short.MAX_VALUE))
+                        .addComponent(jButtonDiscover)
+                        .addGap(0, 172, Short.MAX_VALUE))
+                    .addComponent(jScrollPane1))
+                .addContainerGap())
         );
         jPanel1Layout.setVerticalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel1Layout.createSequentialGroup()
                 .addGap(21, 21, 21)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jLabel1)
-                    .addComponent(jTextField1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(jLabel2)
-                    .addComponent(jTextField2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jButton1))
+                    .addComponent(jTextFieldPort, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jButtonDiscover))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 180, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(79, Short.MAX_VALUE))
+                .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 247, Short.MAX_VALUE)
+                .addContainerGap())
         );
 
         jTabbedPane2.addTab("Discover", jPanel1);
@@ -168,9 +180,8 @@ public class KnxFrame extends javax.swing.JFrame {
                     .addComponent(jTextFieldDatapointsFile, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(jButtonSelectDatapointFile)
                     .addComponent(jButtonDatapointsImport))
-                .addGap(18, 18, 18)
-                .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 203, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(44, Short.MAX_VALUE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addComponent(jScrollPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 253, Short.MAX_VALUE))
         );
 
         jTabbedPane2.addTab("Import datapoints", jPanel2);
@@ -191,10 +202,6 @@ public class KnxFrame extends javax.swing.JFrame {
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
-    private void jTextField1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jTextField1ActionPerformed
-        // TODO add your handling code here:
-    }//GEN-LAST:event_jTextField1ActionPerformed
-
     private void jButtonSelectDatapointFileActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonSelectDatapointFileActionPerformed
         JFileChooser jfc;
         jfc = new JFileChooser();
@@ -213,22 +220,30 @@ public class KnxFrame extends javax.swing.JFrame {
         pluginReference.initialization(pluginReference.datapointMap);
     }//GEN-LAST:event_jButtonDatapointsImportActionPerformed
 
-    
+    private void jButtonDiscoverActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonDiscoverActionPerformed
+        try {
+            String[] args = {"-localport", jTextFieldPort.getText(), "-search"};
+            final Discover d = new Discover(args, this);
+            final ShutdownHandler sh = d.new ShutdownHandler().register();
+            d.run();
+            sh.unregister();
+        } catch (KNXException ex) {
+            Logger.getLogger(KnxFrame.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }//GEN-LAST:event_jButtonDiscoverActionPerformed
     // Variables declaration - do not modify//GEN-BEGIN:variables
-    private javax.swing.JButton jButton1;
     private javax.swing.JButton jButtonDatapointsImport;
+    private javax.swing.JButton jButtonDiscover;
     private javax.swing.JButton jButtonSelectDatapointFile;
-    private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel2;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanel2;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JScrollPane jScrollPane2;
     private javax.swing.JTabbedPane jTabbedPane2;
-    private javax.swing.JTextArea jTextArea1;
     private javax.swing.JTextArea jTextAreaDatapoints;
-    private javax.swing.JTextField jTextField1;
-    private javax.swing.JTextField jTextField2;
+    private javax.swing.JTextArea jTextAreaDiscover;
     private javax.swing.JTextField jTextFieldDatapointsFile;
+    private javax.swing.JTextField jTextFieldPort;
     // End of variables declaration//GEN-END:variables
 }
