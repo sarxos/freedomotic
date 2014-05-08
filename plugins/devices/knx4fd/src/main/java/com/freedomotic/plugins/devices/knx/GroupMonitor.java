@@ -103,24 +103,6 @@ public class GroupMonitor implements Runnable {
         }
     }
 
-    /**
-     * Entry point for running the {@link GroupMonitor}. <p> An IP host or port
-     * identifier has to be supplied, specifying the endpoint for the KNX
-     * network access.<br> To show the usage message of this tool on the
-     * console, supply the command line option -help (or -h).<br> Command line
-     * options are treated case sensitive. Available options for network
-     * monitoring: <ul> <li><code>-help -h</code> show help message</li> <li><code>-version</code>
-     * show tool/library version and exit</li> <li><code>-verbose -v</code>
-     * enable verbose status output</li> <li><code>-localhost</code> <i>id</i>
-     * &nbsp;local IP/host name</li> <li><code>-localport</code> <i>number</i>
-     * &nbsp;local UDP port (default system assigned)</li> <li><code>-port -p</code>
-     * <i>number</i> &nbsp;UDP port on host (default 3671)</li> <li><code>-nat -n</code>
-     * enable Network Address Translation</li> <li><code>-serial -s</code> use
-     * FT1.2 serial communication</li> <li><code>-medium -m</code> <i>id</i>
-     * &nbsp;KNX medium [tp0|tp1|p110|p132|rf] (defaults to tp1)</li> </ul>
-     *     
-     * @param args command line options for network monitoring
-     */
     @Override
     public void run() {
         Exception thrown = null;
@@ -155,9 +137,7 @@ public class GroupMonitor implements Runnable {
      * @throws InterruptedException on interrupted thread
      */
     public void start() throws KNXException, InterruptedException {
-
         link = createLink();
-
         // listen to monitor link events
         link.addLinkListener(l);
     }
@@ -214,14 +194,14 @@ public class GroupMonitor implements Runnable {
             } else {
                 asdu = new byte[0];
                 svc = "UNSUPPORTED";
-                System.out.println("unsupported APDU service - ignored, service code = 0x" + Integer.toHexString(service));
+                Knx4Fd.LOG.info("Unsupported APDU service - ignored, service code = 0x" + Integer.toHexString(service));
             }
             String msg =
-                    Utilities.getDate() + "" + " Frame received | "
-                    + "Source: " + frame.getSource() + " // "
-                    + "Destination: " + frame.getDestination() + " // "
-                    + "ASDU (hex): " + Utilities.getHexString(asdu) + " " + "ASDU lenght: " + asdu.length + " // "
-                    + svc;
+                    Utilities.getDate() + "" + " Frame received from "
+                    + frame.getSource() 
+                    + " to: " + frame.getDestination() 
+                    + " ASDU (hex): " + Utilities.getHexString(asdu) 
+                    + " SVC: " + svc;
 
             msg = msg + " Found object " + pluginRef.getObjectAddress(frame.getDestination().toString());
             // starts value translation based on DTP type
@@ -250,7 +230,7 @@ public class GroupMonitor implements Runnable {
      */
     protected void onCompletion(final Exception thrown, final boolean canceled) {
         if (canceled) {
-            Knx4Fd.LOG.info("Plugin stopped");
+            Knx4Fd.LOG.info("GroupMonitor stopped");
         }
         if (thrown != null) {
             Knx4Fd.LOG.severe(thrown.getMessage() != null ? thrown.getMessage() : thrown.getClass().getName());

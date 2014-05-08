@@ -186,28 +186,24 @@ public class Knx4Fd extends Protocol {
         String dptName = null;
         String dptDPT = null;
         String address = null;
-        ProtocolRead event = null;
 
-        // while loop
         while (iterator.hasNext()) {
             if (iterator.next() instanceof StateDP) {
                 StateDP dpt = (StateDP) iterator.next();
                 dptName = dpt.getName();
-
                 address = dpt.getMainAddress() + "" + dpt.getAddresses(true) + dpt.getDPT();
-                KnxGui.writeDatapointTextArea("DPT " + dptName + " " + address + " main address: " + Utilities.extractMainAddress(address) + " DTP:" + Utilities.extractDTP(address));
+                KnxGui.writeDatapointTextArea("Imported DPT " + dptName + " " + " main address: " + Utilities.extractMainAddress(address) + " DTP:" + Utilities.extractDTP(address));
+                //TODO notify event for joinDevice
+                // notifyChanges(dptAddress, dptDPT, "0", "0");
             } else {
                 CommandDP dpt = (CommandDP) iterator.next();
                 dptName = dpt.getName();
                 dptAddress = dpt.getMainAddress();
                 dptDPT = dpt.getDPT();
-
-                System.out.println("DPT " + dptName + " " + dptAddress + " " + dptDPT);
-
-
+                KnxGui.writeDatapointTextArea("Imported DPT " + dptName + " " + " main address: " + Utilities.extractMainAddress(address) + " DTP:" + Utilities.extractDTP(address));
+                //TODO notify event for joinDevice
+                // notifyChanges(dptAddress, dptDPT, "0", "0");
             }
-
-
         }
     }
 
