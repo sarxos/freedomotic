@@ -1,0 +1,33 @@
+<config>
+    <!-- PLUGINS DEFAULT PARAMETERS -->
+    <properties>
+        <property name="description"    value="Communicates with WifiPower board"/>
+        <property name="protocol.name"  value="wifipower"/>
+        <property name="category"       value="protocol"/>
+        <property name="short-name"     value="wifipower"/>
+        <property name="address-delimiter" value=":"/>
+        <property name="permissions" value="*"/>
+        <property name="startup-time"   value="on load"/>
+        <property name="get-status-url" value="/Q"/>
+     </properties>
+    <tuples>
+        <!-- DEVICES CONFIGURATION -->
+        <tuple>
+            <property name="alias" value="default"/>
+            <property name="ip-to-query" value="78.199.223.177"/>
+            <property name="port-to-query" value="2000"/>
+            <property name="relay-number" value="4"/>
+            <property name="starting-relay" value="1"/>
+            <property name="relay-tag" value="out"/>
+            <property name="monitor-relay" value="true"/>
+            <property name="auto-configuration" value="false"/>
+            <property name="authentication" value="false"/>
+            <property name="username" value="ftp"/>
+            <property name="password" value="2406"/>
+            <property name="object.class" value="Light"/>
+            <property name="powered" value="WifiPower reads a relay state change"/>
+            <property name="turn on" value="Turn ON relay on WifiPower board"/>
+            <property name="turn off" value="Turn OFF relay on WifiPower board"/>
+        </tuple>
+    </tuples>
+</config>

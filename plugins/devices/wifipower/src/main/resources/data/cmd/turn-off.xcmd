@@ -1,0 +1,15 @@
+<com.freedomotic.reactions.Command>
+    <name>Turn OFF Relay on WifiPower board</name>
+    <receiver>app.actuators.protocol.wifipower.in</receiver>
+    <description>turns off the relay linked to this object on WifiPower board</description>
+    <hardwareLevel>true</hardwareLevel>
+    <delay>0</delay>
+    <timeout>0</timeout>
+    <properties>
+        <properties>
+            <property name="command" value="CHANGE-STATE-RELAY"/>
+            <property name="behavior" value="0"/>
+	    <property name="address" value="@owner.object.address"/>
+        </properties>
+    </properties>
+</com.freedomotic.reactions.Command>
