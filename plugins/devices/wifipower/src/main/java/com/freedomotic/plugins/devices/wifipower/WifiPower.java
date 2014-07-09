@@ -199,8 +199,8 @@ public class WifiPower extends Protocol {
                         return new PasswordAuthentication(b.getUsername(), b.getPassword().toCharArray());
                     }
                 });
-                statusFileURL = "http://" + b.getIpAddress() + ":"
-                        + Integer.toString(b.getPort()) + "/protect/" + GET_STATUS_URL;
+                statusFileURL = "http://" + b.getUsername() + ":" + b.getPassword() + "@" + b.getIpAddress() + ":"
+                        + Integer.toString(b.getPort()) + GET_STATUS_URL;
             } else {
                 statusFileURL = "http://" + b.getIpAddress() + ":"
                         + Integer.toString(b.getPort()) + GET_STATUS_URL;
