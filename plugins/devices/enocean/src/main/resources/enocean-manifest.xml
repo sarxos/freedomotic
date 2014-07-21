@@ -1,0 +1,10 @@
+<config>
+    <properties>
+        <property name="description"  value="A plugin for Enocean protocol"/>
+        <property name="category"     value="protocol"/>
+        <property name="short-name"   value="enocean"/>
+        <property name="protocol.name"   value="enocean"/>
+    </properties>
+</config>
+
+                
