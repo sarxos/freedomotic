@@ -3,6 +3,9 @@ package com.freedomotic.plugins.devices.enocean;
 import org.opencean.core.ESP3Host;
 import org.opencean.core.EnoceanReceiver;
 import org.opencean.core.EnoceanSerialConnector;
+import org.opencean.core.address.EnoceanId;
+import org.opencean.core.address.EnoceanParameterAddress;
+import org.opencean.core.common.EEPId;
 import org.opencean.core.common.ParameterAddress;
 import org.opencean.core.common.ParameterValueChangeListener;
 import org.opencean.core.common.ProtocolConnector;
@@ -31,12 +34,13 @@ public class EnoceanClient implements EnoceanReceiver, ParameterValueChangeListe
         ESP3Host esp3Host = new ESP3Host(connector);
         esp3Host.addParameterChangeListener(this);
         esp3Host.addListener(this);
+        EEPId eep = new EEPId("F6:02:01");
+        esp3Host.addDeviceProfile(EnoceanId.fromString("00:8B:62:42"), eep);
         //BasicPacket packet = new QueryIdCommand();
         //esp3Host.sendRadio(packet);
-        esp3Host.start();
-        for (int i=1; i<=10; i++)
-            
+        esp3Host.start(); 
         connector.write(testPayload);
+        
     }
 
     @Override
