@@ -1,0 +1,15 @@
+<it.freedomotic.reactions.Command>
+    <name>Set brightness value of Philips Hue light</name>
+    <receiver>app.actuators.protocol.philips-hue.in</receiver>
+    <description>set brightness value of Philips Hue light</description>
+    <hardwareLevel>true</hardwareLevel>
+    <delay>0</delay>
+    <timeout>0</timeout>
+    <properties>
+        <properties>
+            <property name="command" value="brightness"/>
+            <property name="address" value="@owner.object.address"/>
+            <property name="value" value="@owner.object.brightness"/>
+        </properties>
+    </properties>
+</it.freedomotic.reactions.Command>

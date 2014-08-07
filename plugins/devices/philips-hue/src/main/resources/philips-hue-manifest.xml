@@ -1,0 +1,13 @@
+<config>
+    <!-- PLUGINS DEFAULT PARAMETERS -->
+    <properties>
+        <property name="description"    value="Communicates with Philips Hue"/>
+        <property name="protocol.name"  value="philips-hue"/>
+        <property name="category"       value="protocol"/>
+        <property name="short-name"     value="philips-hue"/>
+        <property name="address-delimiter" value=":"/>
+        <property name="startup-time"   value="on load"/>
+        <property name="ip-address" value="127.0.0.1"/>
+        <property name="port" value="80"/>
+    </properties>
+</config>
