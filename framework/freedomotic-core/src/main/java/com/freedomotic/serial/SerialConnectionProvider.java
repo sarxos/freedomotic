@@ -1,3 +1,4 @@
+
 /**
  *
  * Copyright (c) 2009-2014 Freedomotic team
@@ -19,10 +20,7 @@
  * along with Freedomotic; see the file COPYING.  If not, see
  * <http://www.gnu.org/licenses/>.
  */
-/*
- * To change this template, choose Tools | Templates
- * and open the template in the editor.
- */
+
 package com.freedomotic.serial;
 
 import com.freedomotic.util.Info;
@@ -53,8 +51,8 @@ public class SerialConnectionProvider implements SerialPortEventListener {
 
     private CommPortIdentifier currentPortID = null;
     private SerialPort currentPort = null;
-    private InputStream in;
-    private OutputStream out;
+    protected InputStream in;
+    protected OutputStream out;
     private String APP_ID = "";
     private static boolean ALREADY_IN_CLASSPATH = false;
     private int PORT_BAUDRATE = 19200;
@@ -72,7 +70,7 @@ public class SerialConnectionProvider implements SerialPortEventListener {
     private String DEVICE_NAME = "";
     private int POLLING_TIME;
     private long MAX_WAIT_RESPONSE_TIME;
-    private ArrayList<SerialDataConsumer> consumers = new ArrayList<SerialDataConsumer>();
+    protected ArrayList<SerialDataConsumer> consumers = new ArrayList<SerialDataConsumer>();
 
     /**
      *
@@ -582,7 +580,7 @@ public class SerialConnectionProvider implements SerialPortEventListener {
         this.PORT_STOPBITS = PORT_STOPBITS;
     }
 
-    private synchronized String read() {
+    protected synchronized String read() {
         // Create a StringBuffer and int to receive input data.
         byte[] readBuffer = new byte[400];
         try {
