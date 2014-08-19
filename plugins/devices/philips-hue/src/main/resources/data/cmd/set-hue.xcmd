@@ -1,4 +1,4 @@
-<it.freedomotic.reactions.Command>
+<com.freedomotic.reactions.Command>
     <name>Set hue value of Philips Hue light</name>
     <receiver>app.actuators.protocol.philips-hue.in</receiver>
     <description>set hue value of Philips Hue light</description>
@@ -12,4 +12,4 @@
             <property name="value" value="@owner.object.hue"/>
         </properties>
     </properties>
-</it.freedomotic.reactions.Command>
+</com.freedomotic.reactions.Command>

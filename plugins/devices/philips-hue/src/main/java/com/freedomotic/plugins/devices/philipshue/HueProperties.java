@@ -6,6 +6,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Properties;
 import com.philips.lighting.hue.sdk.connection.impl.PHBridgeInternal;
+import com.freedomotic.util.Info;
 
 /**
  * HueProperties.java
@@ -20,9 +21,9 @@ import com.philips.lighting.hue.sdk.connection.impl.PHBridgeInternal;
  */
 public final class HueProperties {
 
-    private static final String LAST_CONNECTED_IP = "127.0.0.1";
+    private static final String LAST_CONNECTED_IP = "LastIPAddress";
     private static final String USER_NAME = "WhiteListUsername";
-    private static final String PROPS_FILE_NAME = "MyHue.properties";
+    private static final String PROPS_FILE_NAME = Info.PATHS.PATH_DEVICES_FOLDER.getAbsolutePath() + "/philips-hue/" + "MyHue.properties";
     private static Properties props = null;
 
     private HueProperties() {
@@ -48,8 +49,7 @@ public final class HueProperties {
      */
     public static String getUsername() {
         String username = props.getProperty(USER_NAME);
-
-        if (username == null || username.equals("")) {   // If we don't have a username then we generate a unique 16 character one.
+        if (username == null || username.equals("")) { // If we don't have a username then we generate a unique 16 character one.
             username = PHBridgeInternal.generateUniqueKey();
             storeUsername(username);
         }
@@ -64,7 +64,6 @@ public final class HueProperties {
         if (props == null) {
             props = new Properties();
             FileInputStream in;
-
             try {
                 in = new FileInputStream(PROPS_FILE_NAME);
                 props.load(in);
@@ -72,7 +71,7 @@ public final class HueProperties {
             } catch (FileNotFoundException ex) {
                 saveProperties();
             } catch (IOException e) {
-                // Handle the IOException.
+// Handle the IOException.
             }
         }
     }
@@ -83,9 +82,9 @@ public final class HueProperties {
             props.store(out, null);
             out.close();
         } catch (FileNotFoundException e) {
-            // Handle the FileNotFoundException.
+// Handle the FileNotFoundException.
         } catch (IOException e) {
-            // Handle the IOException.
+// Handle the IOException.
         }
     }
 }

@@ -1,6 +1,6 @@
 /**
  *
- * Copyright (c) 2009-2013 Freedomotic team http://freedomotic.com
+ * Copyright (c) 2009-2014 Freedomotic team http://freedomotic.com
  *
  * This file is part of Freedomotic
  *
@@ -17,15 +17,12 @@
  * Freedomotic; see the file COPYING. If not, see
  * <http://www.gnu.org/licenses/>.
  */
-
 /**
- * @autor Mauro Cicolella <mcicolella@libero.it>
-*/
-
+ * @author Mauro Cicolella <mcicolella@libero.it>
+ */
 package com.freedomotic.plugins.devices.philipshue;
 
 import com.philips.lighting.hue.sdk.PHAccessPoint;
-import com.philips.lighting.hue.sdk.PHHueSDK;
 import com.philips.lighting.hue.sdk.PHMessageType;
 import com.philips.lighting.hue.sdk.PHSDKListener;
 import com.philips.lighting.model.PHBridge;
@@ -38,6 +35,8 @@ import com.freedomotic.app.Freedomotic;
 import com.freedomotic.events.ProtocolRead;
 import com.freedomotic.exceptions.UnableToExecuteException;
 import com.freedomotic.reactions.Command;
+import com.philips.lighting.hue.sdk.*;
+import com.philips.lighting.model.*;
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
@@ -56,11 +55,10 @@ public class PhilipsHue extends Protocol {
     private static final int MAX_HUE = 65535;
     private int SOCKET_TIMEOUT = configuration.getIntProperty("socket-timeout", 1000);
     private static int POLLING_TIME = 1000;
-    public String IP_ADDRESS = configuration.getStringProperty("ip-address", "127.0.0.1");
-    private int PORT = configuration.getIntProperty("port", 80);
     private String PROTOCOL = configuration.getStringProperty("protocol.name", "philips-hue");
     private PHHueSDK phHueSDK;
     private PHBridge bridge;
+    ArrayList<PHLight> allLights = new ArrayList<PHLight>();
 
     /**
      * Initializations
@@ -74,20 +72,30 @@ public class PhilipsHue extends Protocol {
     public void onStart() {
         super.onStart();
 
-        phHueSDK = PHHueSDK.create();
-        PHAccessPoint lastAccessPoint = new PHAccessPoint();
-        lastAccessPoint.setIpAddress(IP_ADDRESS);
-        lastAccessPoint.setUsername("newdeveloper");
-        if (!phHueSDK.isAccessPointConnected(lastAccessPoint)) {
-            phHueSDK.connect(lastAccessPoint);
-            System.out.println("Bridges found: " + phHueSDK.getAllBridges().size());
-        } else {  // First time use, so perform a bridge search.
-            System.out.println("Impossible to connect!");
+        phHueSDK = phHueSDK.create();
+        HueProperties.loadProperties(); // Load in HueProperties, if first time use a properties file is created.
+        //PHAccessPoint lastAccessPoint = new PHAccessPoint();
+        if (connectToLastKnownAccessPoint()) {
+            LOG.info("Philips Hue connected to " + HueProperties.getLastConnectedIP());
+            setDescription("Connected to " + HueProperties.getLastConnectedIP());
+        } else {
+            findBridges();
         }
 
-        //HueProperties.loadProperties();  // Load in HueProperties, if first time use a properties file is created.
-        //bridge = phHueSDK.getSelectedBridge();
-
+        //lastAccessPoint.setIpAddress(IP_ADDRESS + ":" + PORT);
+        //lastAccessPoint.setUsername(USERNAME);
+        //if (!phHueSDK.isAccessPointConnected(lastAccessPoint)) {
+        //    phHueSDK.connect(lastAccessPoint);
+        //    LOG.info("Philips Hue connected to " + IP_ADDRESS + ":" + PORT);
+        //    setDescription("Connected to " + IP_ADDRESS + ":" + PORT);
+        //} else {  // First time use, so perform a bridge search.
+        //    LOG.severe("Connection impossible! " + "Bridges found: " + phHueSDK.getAllBridges().size());
+        //    onStop();
+        // }
+        // gets all lights 
+        //PHBridge bridge = phHueSDK.getSelectedBridge();
+        //allLights = (ArrayList<PHLight>) bridge.getResourceCache().getAllLights();
+        findBridges();
     }
 
     @Override
@@ -99,9 +107,10 @@ public class PhilipsHue extends Protocol {
                 phHueSDK.disableHeartbeat(bridge);
             }
             phHueSDK.disconnect(bridge);
+            LOG.info("Philips Hue disconnected from " + HueProperties.getLastConnectedIP());
         }
         setPollingWait(-1); //disable polling
-        //display the default description
+        LOG.info("Philips Hue plugin stopped");
         setDescription(configuration.getStringProperty("description", "Philips Hue"));
     }
 
@@ -122,7 +131,7 @@ public class PhilipsHue extends Protocol {
         try {
             Thread.sleep(POLLING_TIME);
         } catch (InterruptedException ex) {
-            Logger.getLogger(PhilipsHue.class.getName()).log(Level.SEVERE, null, ex);
+            LOG.severe(ex.getMessage());
         }
     }
 
@@ -191,72 +200,129 @@ public class PhilipsHue extends Protocol {
         }
         return null;
     }
-    // Create a Listener to receive bridge notifications.
-    public PHSDKListener listener = new PHSDKListener() {
+
+    public void findBridges() {
+        phHueSDK = PHHueSDK.getInstance();
+        PHBridgeSearchManager sm = (PHBridgeSearchManager) phHueSDK.getSDKService(PHHueSDK.SEARCH_BRIDGE);
+        sm.search(true, true);
+    }
+    private PHSDKListener listener = new PHSDKListener() {
 
         @Override
-        public void onCacheUpdated(int flags, PHBridge bridge) {
-        }
-
-        @Override
-        public void onBridgeConnected(PHBridge b) {
-            phHueSDK.setSelectedBridge(b);
-            phHueSDK.enableHeartbeat(b, PHHueSDK.HB_INTERVAL);
-            phHueSDK.getLastHeartbeat().put(b.getResourceCache().getBridgeConfiguration().getIpAddress(), System.currentTimeMillis());
-            //prefs.setLastConnectedIPAddress(b.getResourceCache().getBridgeConfiguration().getIpAddress());
-            //prefs.setUsername(prefs.getUsername());
-            //PHWizardAlertDialog.getInstance().closeProgressDialog();
-            //startMainActivity();
+        public void onAccessPointsFound(List<PHAccessPoint> accessPointsList) {
+            //  desktopView.getFindingBridgeProgressBar().setVisible(false);
+            //     AccessPointList accessPointList = new AccessPointList(accessPointsList, instance);
+            //     accessPointList.setVisible(true);
+            //     accessPointList.setLocationRelativeTo(null); // Centre the AccessPointList Frame
         }
 
         @Override
         public void onAuthenticationRequired(PHAccessPoint accessPoint) {
-            //Log.w(TAG, "Authentication Required.");
-
+// Start the Pushlink Authentication.
+            //    desktopView.getFindingBridgeProgressBar().setVisible(false);
             phHueSDK.startPushlinkAuthentication(accessPoint);
-            //startActivity(new Intent(PHHomeActivity.this, PHPushlinkActivity.class));
-
+            //     pushLinkDialog = new PushLinkFrame(instance);
+            //     pushLinkDialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
+            //     pushLinkDialog.setModal(true);
+            //     pushLinkDialog.setLocationRelativeTo(null); // Center the dialog.
+            //     pushLinkDialog.setVisible(true);
         }
 
         @Override
-        public void onAccessPointsFound(List<PHAccessPoint> list) {
-            throw new UnsupportedOperationException("Not supported yet.");
+        public void onBridgeConnected(PHBridge bridge) {
+            phHueSDK.setSelectedBridge(bridge);
+            phHueSDK.enableHeartbeat(bridge, PHHueSDK.HB_INTERVAL);
+            String username = HueProperties.getUsername();
+            String lastIpAddress = bridge.getResourceCache().getBridgeConfiguration().getIpAddress();
+            LOG.info("On connected: IP " + lastIpAddress);
+            HueProperties.storeUsername(username);
+            HueProperties.storeLastIPAddress(lastIpAddress);
+            HueProperties.saveProperties();
+// Update the GUI.
+            // desktopView.getLastConnectedIP().setText(lastIpAddress);
+            // desktopView.getLastUserName().setText(username);
+// Close the PushLink dialog (if it is showing).
+            //  if (pushLinkDialog != null && pushLinkDialog.isShowing()) {
+            //    pushLinkDialog.setVisible(false);
+            //   }
+// Enable the Buttons/Controls to change the hue bulbs.s
+            //   desktopView.getRandomLightsButton().setEnabled(true);
+            //   desktopView.getSetLightsButton().setEnabled(true);
+        }
+
+        @Override
+        public void onCacheUpdated(int arg0, PHBridge arg1) {
+        }
+
+        @Override
+        public void onConnectionLost(PHAccessPoint arg0) {
+        }
+
+        @Override
+        public void onConnectionResumed(PHBridge arg0) {
         }
 
         @Override
         public void onError(int code, final String message) {
-            //  Log.e(TAG, "on Error Called : " + code + ":" + message);
-
-            if (code == PHHueError.NO_CONNECTION) {
-//            Log.w(TAG, "On No Connection");
-            } else if (code == PHHueError.AUTHENTICATION_FAILED || code == 1158) {
-                //          PHWizardAlertDialog.getInstance().closeProgressDialog();
-            } else if (code == PHHueError.BRIDGE_NOT_RESPONDING) {
-                //        Log.w(TAG, "Bridge Not Responding . . . ");
-                //      PHWizardAlertDialog.getInstance().closeProgressDialog();
-                //      PHHomeActivity.this.runOnUiThread(new Runnable() {
-                //        @Override
-                //      public void run() {
-                //          PHWizardAlertDialog.showErrorDialog(PHHomeActivity.this, message, R.string.btn_ok);
-                //      }
-                //   }); 
-            } else if (code == PHMessageType.BRIDGE_NOT_FOUND) {
-                // PHWizardAlertDialog.getInstance().closeProgressDialog();
-                //  PHHomeActivity.this.runOnUiThread(new Runnable() {
-                //    @Override
-                //    public void run() {
-                //      PHWizardAlertDialog.showErrorDialog(PHHomeActivity.this, message, R.string.btn_ok);
-                // }
-                // });                
-            }
+            //  if (code == PHHueError.BRIDGE_NOT_RESPONDING) {
+            //   desktopView.getFindingBridgeProgressBar().setVisible(false);
+            //    desktopView.getFindBridgesButton().setEnabled(true);
+            //    desktopView.getConnectToLastBridgeButton().setEnabled(true);
+            //    desktopView.showDialog(message);
+            // } else if (code == PHMessageType.PUSHLINK_BUTTON_NOT_PRESSED) {
+            //   pushLinkDialog.incrementProgress();
+            //  } else if (code == PHMessageType.PUSHLINK_AUTHENTICATION_FAILED) {
+            // if (pushLinkDialog.isShowing()) {
+            //   pushLinkDialog.setVisible(false);
+            //    desktopView.showDialog(message);
+            //    } else {
+            //   desktopView.showDialog(message);
         }
-
-        @Override
-        public void onConnectionResumed(PHBridge bridge) {
-        }
-
-        @Override
-        public void onConnectionLost(PHAccessPoint accessPoints) {
-        }
+        // desktopView.getFindBridgesButton().setEnabled(true);
+        //  } else if (code == PHMessageType.BRIDGE_NOT_FOUND) {
+        //  desktopView.getFindingBridgeProgressBar().setVisible(false);
+        //  desktopView.getFindBridgesButton().setEnabled(true);
+        //  desktopView.showDialog(message);
+        // }
+        // }
     };
+
+    public PHSDKListener getListener() {
+        return listener;
+    }
+
+    public void setListener(PHSDKListener listener) {
+        this.listener = listener;
+    }
+
+    public void randomLights() {
+        PHBridge bridge = phHueSDK.getSelectedBridge();
+        PHBridgeResourcesCache cache = bridge.getResourceCache();
+        List<PHLight> allLights = cache.getAllLights();
+        Random rand = new Random();
+        for (PHLight light : allLights) {
+            PHLightState lightState = new PHLightState();
+            lightState.setHue(rand.nextInt(MAX_HUE));
+            bridge.updateLightState(light, lightState); // If no bridge response is required then use this simpler form.
+        }
+    }
+
+    /**
+     * Connect to the last known access point. This method can be used to automatically
+     * connect to a bridge.
+     *     
+*/
+    public boolean connectToLastKnownAccessPoint() {
+        String username = HueProperties.getUsername();
+        String lastIpAddress = HueProperties.getLastConnectedIP();
+        if (username == null || lastIpAddress == null) {
+            LOG.severe("Missing Last Username or Last IP. Last known connection not found.");
+            return false;
+        }
+        PHAccessPoint accessPoint = new PHAccessPoint();
+        accessPoint.setIpAddress(lastIpAddress);
+        accessPoint.setUsername(username);
+        phHueSDK.connect(accessPoint);
+        return true;
+    }
 }
