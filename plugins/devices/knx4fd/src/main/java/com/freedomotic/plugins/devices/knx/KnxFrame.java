@@ -223,8 +223,8 @@ public class KnxFrame extends javax.swing.JFrame {
     private void jButtonDiscoverActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonDiscoverActionPerformed
         try {
             String[] args = {"-localport", jTextFieldPort.getText(), "-search"};
-            final Discover d = new Discover(args, this);
-            final ShutdownHandler sh = d.new ShutdownHandler().register();
+            Discover d = new Discover(args, this);
+            final Discover.ShutdownHandler sh = d.new ShutdownHandler().register();
             d.run();
             sh.unregister();
         } catch (KNXException ex) {
