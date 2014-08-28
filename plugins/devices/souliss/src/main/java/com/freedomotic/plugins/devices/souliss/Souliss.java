@@ -26,7 +26,7 @@ import com.freedomotic.app.Freedomotic;
 import com.freedomotic.exceptions.UnableToExecuteException;
 import com.freedomotic.reactions.Command;
 import java.io.*;
-import java.net.Socket;
+import java.net.*;
 import java.util.ArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -34,14 +34,12 @@ import org.codehaus.jackson.JsonGenerationException;
 import org.codehaus.jackson.map.JsonMappingException;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.JsonNode;
-import java.net.ConnectException;
-import java.net.URL;
 import java.nio.charset.Charset;
 import org.json.JSONObject;
 import org.json.JSONException;
 
 /**
- * @author Mauro Cicolella -
+ * @author Mauro Cicolella
  *
  */
 public class Souliss extends Protocol {
@@ -178,7 +176,7 @@ public class Souliss extends Protocol {
             System.out.println("Json string from server " + jsonText);
             // find the json start point 
             int startJson = jsonText.indexOf('(');
-            jsonText = jsonText.substring(startJson + 1, jsonText.length() - 1);
+            jsonText = jsonText.substring(startJson + 1, jsonText.length());
             System.out.println("Json string filtered " + jsonText);
             JSONObject json = new JSONObject(jsonText);
             return jsonText;
@@ -212,7 +210,7 @@ public class Souliss extends Protocol {
                     typical = node2.path("typ").getTextValue();
                     val = node2.path("val").getTextValue();
                     System.out.println("id:" + id + " slot" + slot + " Typ: " + typical + " Val: " + val + "\n");
-                    Freedomotic.logger.severe("Souliss monitorize id: " + id + " slot: " + slot + " typ: " + typical + " val: " + val);
+                    LOG.info("Souliss monitorize id: " + id + " slot: " + slot + " typ: " + typical + " val: " + val);
                     // call for notify event
                     sendChanges(board, id, slot, val, typical);
                     slot++;
@@ -248,59 +246,41 @@ public class Souliss extends Protocol {
      */
     @Override
     public void onCommand(Command c) throws UnableToExecuteException {
-        //get connection paramentes address:port from received freedom command
         String delimiter = configuration.getProperty("address-delimiter");
-        address = c.getProperty("address").split(delimiter);
-        //connect to the ethernet board
-        boolean connected = false;
+
         try {
-            connected = connect(address[0], Integer.parseInt(address[1]));
-        } catch (ArrayIndexOutOfBoundsException outEx) {
-            LOG.severe("The object address '" + c.getProperty("address") + "' is not properly formatted. Check it!");
-            throw new UnableToExecuteException();
-        } catch (NumberFormatException numberFormatException) {
-            LOG.severe(address[1] + " is not a valid ethernet port to connect to");
-            throw new UnableToExecuteException();
+            URL url = null;
+            URLConnection urlConnection;
+            address = c.getProperty("address").split(delimiter);
+            String ipAddress = address[0];
+            String portNumber = address[1];
+            String message = createCommandUrl(c);
+
+            //Create a URL for the desired page
+            url = new URL("http://" + ipAddress + ":" + portNumber + "/" + message);
+            urlConnection = url.openConnection();
+            LOG.info("Freedomotic sends the command " + url);
+            InputStream is = urlConnection.getInputStream();
+            InputStreamReader isr = new InputStreamReader(is);
+            int numCharsRead;
+            char[] charArray = new char[1024];
+            StringBuffer sb = new StringBuffer();
+            while ((numCharsRead = isr.read(charArray)) > 0) {
+                sb.append(charArray, 0, numCharsRead);
+            }
+            String result = sb.toString();
+        } catch (MalformedURLException e) {
+            LOG.severe("Malformed URL " + e.toString());
+        } catch (IOException e) {
+            LOG.severe("IOexception" + e.toString());
         }
 
-        if (connected) {
-            String message = createMessage(c);
-            //String expectedReply = c.getProperty("expected-reply");
-            try {
-                String reply = sendToBoard(message);
-                //if ((reply != null) && (!reply.equals(expectedReply))) {
-                //TODO: implement reply check
-                //}
-            } catch (IOException iOException) {
-                setDescription("Unable to send the message to host " + address[0] + " on port " + address[1]);
-                LOG.severe("Unable to send the message to host " + address[0] + " on port " + address[1] + " Exception reported: " + iOException.toString());
-                throw new UnableToExecuteException();
-            } finally {
-                disconnect();
-            }
-        } else {
-            throw new UnableToExecuteException();
-        }
-    }
 
-    private String sendToBoard(String message) throws IOException {
-        String receivedReply = null;
-        if (outputStream != null) {
-            outputStream.writeBytes(message);
-            outputStream.flush();
-            inputStream = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-            try {
-                receivedReply = inputStream.readLine(); // read device reply
-            } catch (IOException iOException) {
-                throw new IOException();
-            }
-        }
-        return receivedReply;
+
     }
 
     // create message to send to the board
-    // this part must be changed to relect board protocol
-    public String createMessage(Command c) {
+    public String createCommandUrl(Command c) {
         String message = null;
         String id = null;
         String slot = null;
@@ -314,11 +294,7 @@ public class Souliss extends Protocol {
 
         //compose requested url
         url = "force?id=" + id + "&slot=" + slot + "&val=" + val;
-
-        // http request sending to the board
-        message = "GET /" + url + " HTTP 1.1\r\n\r\n";
-        LOG.info("Sending 'GET /" + url + " HTTP 1.1' to Souliss board");
-        return (message);
+        return (url);
     }
 
     @Override
