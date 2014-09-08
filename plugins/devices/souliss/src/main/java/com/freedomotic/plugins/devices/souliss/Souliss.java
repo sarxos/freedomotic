@@ -68,15 +68,20 @@ public class Souliss extends Protocol {
         }
         setDescription("Reading status changes from"); //empty description
         for (int i = 0; i < BOARD_NUMBER; i++) {
-            String ipToQuery;
-            int portToQuery;
-            String statusToQuery;
-            ipToQuery = configuration.getTuples().getStringProperty(i, "ip-to-query", "192.168.1.201");
-            portToQuery = configuration.getTuples().getIntProperty(i, "port-to-query", 80);
-            statusToQuery = configuration.getTuples().getStringProperty(i, "status-to-query", "http://192.168.1.201:80/status");
-            Board board = new Board(ipToQuery, portToQuery, statusToQuery);
-            boards.add(board);
-            setDescription(getDescription() + " " + ipToQuery + ":" + portToQuery + ";");
+             // filter the tuples with "object.class" property
+            String result = configuration.getTuples().getProperty(i, "object.class");
+            // if the tuple hasn't an "object.class" property it's a board configuration one 
+            if (result == null) {
+                String ipToQuery;
+                int portToQuery;
+                String statusToQuery;
+                ipToQuery = configuration.getTuples().getStringProperty(i, "ip-to-query", "192.168.1.201");
+                portToQuery = configuration.getTuples().getIntProperty(i, "port-to-query", 80);
+                statusToQuery = configuration.getTuples().getStringProperty(i, "status-to-query", "http://192.168.1.201:80/status");
+                Board board = new Board(ipToQuery, portToQuery, statusToQuery);
+                boards.add(board);
+                setDescription(getDescription() + " " + ipToQuery + ":" + portToQuery + ";");
+            }
         }
     }
 
@@ -208,12 +213,16 @@ public class Souliss extends Protocol {
                 slot = 0;
                 for (JsonNode node2 : node.path("slot")) {
                     typical = node2.path("typ").getTextValue();
-                    val = node2.path("val").getTextValue();
+                    val = node2.path("val").toString();   //.getTextValue();
                     System.out.println("id:" + id + " slot" + slot + " Typ: " + typical + " Val: " + val + "\n");
                     LOG.info("Souliss monitorize id: " + id + " slot: " + slot + " typ: " + typical + " val: " + val);
                     // call for notify event
                     sendChanges(board, id, slot, val, typical);
-                    slot++;
+                    if (typical.equals("19") || typical.equals("51") || typical.equals("52") || typical.equals("53") || typical.equals("54") || typical.equals("55") || typical.equals("56") || typical.equals("57") || typical.equals("58") || typical.equals("59") ) {
+			slot = slot + 2; }
+                    else if (typical.equals("16")) {
+			slot = slot + 4; }
+                    else slot++;
                 }
                 id++;
             }
@@ -228,14 +237,82 @@ public class Souliss extends Protocol {
         ProtocolRead event = new ProtocolRead(this, "souliss", address);
         event.addProperty("souliss.typical", typical);
         event.addProperty("souliss.val", val);
+        //event.addProperty("object.name", "Light "+id+":"+slot);
+        event.addProperty("object.protocol", "souliss");
         switch (Integer.parseInt(typical)) {
-            case 11:
+            case 11:       //   ON/OFF Light-Relay
                 if (val.equals("0")) {
                     event.addProperty("isOn", "false");
                 } else {
                     event.addProperty("isOn", "true");
                 }
+                event.addProperty("object.name", "Light "+id+":"+slot);
+                event.addProperty("object.class", "Light");
                 break;
+            case 16:       //   Dimmable Light
+                if (val.equals("0")) {
+                    event.addProperty("isOn", "false");
+                } else {
+                    event.addProperty("isOn", "true");
+                }
+                event.addProperty("object.name", "Light "+id+":"+slot);
+                event.addProperty("object.class", "Light");
+                break;
+            case 19:        //  RGB Light
+                if (val.equals("0")) {
+                    event.addProperty("isOn", "false");
+                } else {
+                    event.addProperty("isOn", "true");
+                }
+                event.addProperty("object.name", "Light "+id+":"+slot);
+                event.addProperty("object.class", "Light");
+                break;
+            case 51:
+                //Temporally used for Lux until a Souliss Bug 77 Solved
+                event.addProperty("object.name", "Analog "+id+":"+slot);
+                event.addProperty("object.class", "Light Sensor");
+                event.addProperty("sensor.analog", val);
+                break;
+            case 52:
+                //event.addProperty("sensor.temperature", val);
+                event.addProperty("object.name", "Temperature "+id+":"+slot);
+                event.addProperty("object.class", "Thermostat");
+                event.addProperty("sensor.analog", val);
+                break;
+            case 53:
+                event.addProperty("object.name", "Humidity "+id+":"+slot);
+                event.addProperty("object.class", "Hygrometer");
+                event.addProperty("sensor.analog", val);
+                break;                
+            case 54:
+                event.addProperty("object.name", "Lux "+id+":"+slot);
+                event.addProperty("object.class", "Light Sensor");
+                event.addProperty("sensor.analog", val);
+                break;                
+            case 55:
+                //event.addProperty("object.name", "Voltage "+id+":"+slot);
+                //event.addProperty("object.class", "Powermeter");;
+                event.addProperty("sensor.analog", val);
+                break;                
+            case 56:
+                //event.addProperty("object.name", "Current "+id+":"+slot);
+                //event.addProperty("object.class", "Powermeter");;
+                event.addProperty("sensor.analog", val);
+                break;                
+            case 57:
+                event.addProperty("object.name", "Watt "+id+":"+slot);
+                event.addProperty("object.class", "PowerMeter");;
+                event.addProperty("sensor.analog", val);
+                break;                
+            case 58:
+                event.addProperty("object.name", "Barometer "+id+":"+slot);
+                event.addProperty("object.class", "Barometer");;
+                event.addProperty("sensor.analog", val);
+                break; 
+            case 59:
+                event.addProperty("sensor.analog", val);
+                break;                
+                
         }
         //publish the event on the messaging bus
         this.notifyEvent(event);
