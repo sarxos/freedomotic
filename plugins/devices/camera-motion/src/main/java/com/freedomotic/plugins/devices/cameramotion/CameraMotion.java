@@ -117,20 +117,38 @@ public class CameraMotion
         for (Webcam webcam : Webcam.getWebcams()) {
             // TODO set panel dimensions as config parameters
             WebcamPanel panel = new WebcamPanel(webcam, new Dimension(256, 144), false);
-            panel.setFillArea(true);
+            panel.setFitArea(true); // best fit into panel area (do not break image proportions)
             panel.setFPSLimited(true);
-            panel.setFPSLimit(0.2); // 0.1 FPS = 1 frame per 10 seconds
+            panel.setFPSLimit(0.5); // 0.5 FPS = 1 frame per 2 seconds
             //panel.setBorder(BorderFactory.createEmptyBorder());
             Border title = BorderFactory.createTitledBorder(webcam.getName());
             panel.setBorder(title);
             f.add(panel);
             panels.add(panel);
+            
+            final Webcam refWebcam = webcam;
+            final WebcamPanel refPanel = panel;
+
+            // open webcam and start panel in parallel, by doing this in new thread GUI will
+            // not be blocked for the time when webcam is being initialized
+
+            // webcam will be open in asynchronouns mode:
+            // webcam.open() = synchronouse mode, getImage() is blocking
+            // webcam.open(true) = asynchronous mode, getImage() is non-blocking (return immediately, but may return old image)
+
+            Thread t = new Thread() {
+
+	        @Override
+	        public void run() {
+	            refWebcam.open(true); // open in asynchronous mode, do nothing if already open
+		    refPanel.start(); // start motion detector
+                }
+	    };
+	    t.setDaemon(true);
+	    t.start();
         }
 
         f.pack();
-        for (WebcamPanel panel : panels) {
-            panel.start();
-        }
     }
 
     public class DetectMotion implements WebcamMotionListener {
@@ -139,13 +157,30 @@ public class CameraMotion
 
         public DetectMotion() {
             for (Webcam webcam : Webcam.getWebcams()) {
+                
                 WebcamMotionDetector detector = new WebcamMotionDetector(webcam);
-                detector.setInterval(100); // one check per 100 ms (10 FPS)
+                
+                // 2000 = 1 check per 2 seconds, 0.5 FPS which is the same value as in panel
+                detector.setInterval(2000);
                 detector.addMotionListener(this);
                 detectors.add(detector);
-            }
-            for (WebcamMotionDetector detector : detectors) {
-                detector.start();
+                
+                final Webcam refWebcam = webcam;
+                final WebcamDetector refDetector = detector;
+
+                // open webcam and start motion detector in parallel, by doing this in new thread GUI will
+                // not be blocked for the time when webcam is being initialized
+                
+                Thread t = new Thread() {
+
+		    @Override
+		    public void run() {
+		        refWebcam.open(true); // open in asynchronous mode, do nothing if already open
+			refDetector.start(); // start motion detector
+		    }
+	        };
+		t.setDaemon(true);
+		t.start();
             }
         }
 
@@ -164,13 +199,14 @@ public class CameraMotion
     public void captureImage(String cameraName) {
         Webcam webcam = getCameraByName(cameraName);
         if (webcam != null) {
-            webcam.open();
+            webcam.open(true);
             BufferedImage image = webcam.getImage();
             Date now = new Date();
-            SimpleDateFormat dateformat =
-                    new SimpleDateFormat("dd MMMM yyyy - HH:mm.ss");
+            SimpleDateFormat dateformat = new SimpleDateFormat("dd MMMM yyyy - HH:mm.ss");
+            
+            // JPG is circa 10x smaller than the same image in PNG
             try {
-                ImageIO.write(image, "PNG", new File(Info.PATHS.PATH_DEVICES_FOLDER + "/camera-motion/data/" + webcam.getName() + "_" + now + ".png"));
+                ImageIO.write(image, "JPG", new File(Info.PATHS.PATH_DEVICES_FOLDER + "/camera-motion/data/" + webcam.getName() + "_" + now + ".jpg"));
             } catch (IOException ex) {
                 LOG.severe(ex.getMessage());
             }
