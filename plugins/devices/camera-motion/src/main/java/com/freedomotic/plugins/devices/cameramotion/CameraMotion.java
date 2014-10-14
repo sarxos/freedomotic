@@ -136,17 +136,17 @@ public class CameraMotion
             // webcam.open() = synchronouse mode, getImage() is blocking
             // webcam.open(true) = asynchronous mode, getImage() is non-blocking (return immediately, but may return old image)
 
-            Thread t = new Thread() {
+			Thread t = new Thread() {
 
-	        @Override
-	        public void run() {
-	            refWebcam.open(true); // open in asynchronous mode, do nothing if already open
-		    refPanel.start(); // start motion detector
-                }
-	    };
-	    t.setDaemon(true);
-	    t.start();
-        }
+				@Override
+				public void run() {
+					refWebcam.open(true); // open in asynchronous mode, do nothing if already open
+					refPanel.start(); // start motion detector
+				}
+			};
+			t.setDaemon(true);
+			t.start();
+		}
 
         f.pack();
     }
@@ -166,23 +166,23 @@ public class CameraMotion
                 detectors.add(detector);
                 
                 final Webcam refWebcam = webcam;
-                final WebcamDetector refDetector = detector;
+                final WebcamMotionDetector refDetector = detector;
 
                 // open webcam and start motion detector in parallel, by doing this in new thread GUI will
                 // not be blocked for the time when webcam is being initialized
                 
-                Thread t = new Thread() {
+				Thread t = new Thread() {
 
-		    @Override
-		    public void run() {
-		        refWebcam.open(true); // open in asynchronous mode, do nothing if already open
-			refDetector.start(); // start motion detector
-		    }
-	        };
-		t.setDaemon(true);
-		t.start();
-            }
-        }
+					@Override
+					public void run() {
+						refWebcam.open(true); // asynchronous mode, do nothing if already open
+						refDetector.start(); // start motion detector
+					}
+				};
+				t.setDaemon(true);
+				t.start();
+			}
+		}
 
         @Override
         public void motionDetected(WebcamMotionEvent wme) {

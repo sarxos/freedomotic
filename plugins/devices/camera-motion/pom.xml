@@ -46,6 +46,13 @@
         <freedomotic.marketplace.password></freedomotic.marketplace.password>
     </properties>
 
+	<repositories>
+		<repository>
+			<id>Sonatype OSS Snapshot Repository</id>
+			<url>http://oss.sonatype.org/content/repositories/snapshots</url>
+		</repository>
+	</repositories>
+
     <dependencies>
         <dependency>
             <groupId>junit</groupId>
@@ -60,13 +67,8 @@
         </dependency>
         <dependency>
             <groupId>com.github.sarxos</groupId>
-            <artifactId>webcam-capture</artifactId>
-            <version>0.3.10</version>
-        </dependency>
-        <dependency>
-            <groupId>com.github.sarxos</groupId>
             <artifactId>webcam-capture-driver-ipcam</artifactId>
-            <version>0.3.10</version>
+            <version>0.3.11-SNAPSHOT</version>
         </dependency>
     </dependencies>
 
